@@ -7,6 +7,7 @@ enum KluczMikrofonu {
 }
 
 final class MikrofonAudioCapturing: AudioCapturing {
+    var poProbkach: (([Float]) -> Void)?
     private let recorder: AudioRecorder
     private let wskaznik: any WskaznikNagrywania
     private let magazyn: MagazynUstawien
@@ -20,11 +21,15 @@ final class MikrofonAudioCapturing: AudioCapturing {
         self.magazyn = magazyn
         let recorder = AudioRecorder()
         self.recorder = recorder
+        recorder.onProbki = { [weak self] pcm in self?.poProbkach?(pcm) }
         recorder.onPoziom = { [weak wskaznik] szczyt, czas in
             wskaznik?.przyjmij(szczyt: szczyt, czas: czas)
         }
         recorder.onZatrzymanie = { [weak wskaznik] in wskaznik?.zakoncz() }
-        recorder.onPierwszeProbki = { [weak wskaznik] in wskaznik?.rozpocznij() }
+        recorder.onPierwszeProbki = { [weak self] in
+            self?.wskaznik.rozpocznij()
+            self?.koordynator?.mikrofonOdbieraDzwiek()
+        }
         recorder.onBrakDzwieku = { [weak self] in
             self?.przerwijNagrywanie(komunikat: "Mikrofon nie dostarcza dźwięku. Sprawdź połączenie lub wybierz inne wejście w menu Mikrofon.")
         }

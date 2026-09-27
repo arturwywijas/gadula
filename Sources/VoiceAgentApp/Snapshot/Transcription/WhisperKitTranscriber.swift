@@ -43,7 +43,7 @@ final class WhisperKitTranscriber: Transcriber, @unchecked Sendable {
             modelFolder: modelFolder,
             verbose: false,
             logLevel: .error,
-            prewarm: true,
+            prewarm: false,
             load: true,
             download: false
         )
@@ -63,6 +63,7 @@ final class WhisperKitTranscriber: Transcriber, @unchecked Sendable {
         warmOpts.withoutTimestamps = true
         warmOpts.temperatureFallbackCount = 0
         warmOpts.sampleLength = 1
+        warmOpts.windowClipTime = 0
         let dummy = [Float](repeating: 0, count: 16_000)
         _ = try? await kit.transcribe(audioArray: dummy, decodeOptions: warmOpts)
         Self.log.info("WhisperKit warmup: \(String(format: "%.2f", CFAbsoluteTimeGetCurrent() - warmStart))s")
@@ -70,7 +71,7 @@ final class WhisperKitTranscriber: Transcriber, @unchecked Sendable {
         await MainActor.run { progress(1.0) }
     }
 
-    func transcribe(samples: [Float], language: String, fallbackCount: Int) async throws -> String? {
+    func transcribe(samples: [Float], language: String, fallbackCount: Int, slownik: [String] = []) async throws -> String? {
         let kit = queue.sync { pipe }
         guard let kit else { throw TranscriberError.modelNotLoaded }
         if samples.isEmpty { throw TranscriberError.empty }
@@ -86,19 +87,62 @@ final class WhisperKitTranscriber: Transcriber, @unchecked Sendable {
         options.temperatureFallbackCount = max(0, fallbackCount)
         // Pozostawiamy domyślne 224 tokeny biblioteki zamiast limitu 128.
         let okno = kit.featureExtractor.windowSamples ?? Constants.defaultWindowSamples
-        options.chunkingStrategy = ParametryRozpoznawania.uzyjVAD(liczbaProbek: przygotowane.pcm.count, okno: okno) ? .vad : nil
+        options.chunkingStrategy = nil
+        // Domyślne 1 s pomija krótkie wypowiedzi i końcówki nagrania.
+        options.windowClipTime = 0
+        if !slownik.isEmpty, let tokenizer = kit.tokenizer {
+            let limitPodpowiedzi = (Constants.maxTokenContext / 2) - 1
+            let prompt = SlownikDyktowania(slownik.joined(separator: "\n")).podpowiedz(limit: limitPodpowiedzi) {
+                tokenizer.encode(text: " " + $0).count
+            }
+            if !prompt.isEmpty { options.promptTokens = tokenizer.encode(text: " " + prompt) }
+        }
         Self.log.notice("FN19 decoding sampleLength=\(options.sampleLength) fallbackCount=\(options.temperatureFallbackCount) vad=\(options.chunkingStrategy == .vad) windowSamples=\(okno)")
 
         let t0 = CFAbsoluteTimeGetCurrent()
-        let results = try await kit.transcribe(audioArray: przygotowane.pcm, decodeOptions: options)
+        // Również awaryjne rozpoznanie całego nagrania dzielimy na pauzach.
+        // Bez granicy zdania stałe okno 30 s mogło zgubić jego końcówkę.
+        var podzial = PodzialNagrania()
+        var fragmenty = podzial.przyjmij(przygotowane.pcm)
+        let koncowka = podzial.zakoncz()
+        if !koncowka.isEmpty { fragmenty.append(koncowka) }
+        var teksty: [String] = []
+        for fragment in fragmenty {
+            try Task.checkCancellation()
+            var opcjeFragmentu = options
+            opcjeFragmentu.withoutTimestamps = fragment.count <= okno
+            var results = try await kit.transcribe(audioArray: fragment, decodeOptions: opcjeFragmentu)
+            if Self.wyczerpanoKontekst(results, podpowiedz: opcjeFragmentu.promptTokens?.count ?? 0) {
+                // Nazwy zajmują część wspólnego kontekstu. Powtórz cały fragment
+                // bez podpowiedzi, zamiast zwracać tekst urwany w połowie słowa.
+                opcjeFragmentu.promptTokens = nil
+                try Task.checkCancellation()
+                results = try await kit.transcribe(audioArray: fragment, decodeOptions: opcjeFragmentu)
+                guard !Self.wyczerpanoKontekst(results, podpowiedz: 0) else {
+                    throw TranscriberError.contextLimit
+                }
+            }
+            teksty.append(contentsOf: results.map { $0.text })
+        }
         let elapsed = CFAbsoluteTimeGetCurrent() - t0
         let audioSec = Double(samples.count) / 16_000.0
         let rtf = audioSec > 0 ? elapsed / audioSec : 0
         Self.log.info("kit.transcribe: \(String(format: "%.2f", elapsed))s for \(String(format: "%.2f", audioSec))s audio (RTF=\(String(format: "%.2f", rtf)))")
 
-        let text = results.map { $0.text }.joined(separator: " ")
+        let text = teksty.joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return text.isEmpty ? nil : text
+    }
+
+    private static func wyczerpanoKontekst(_ wyniki: [TranscriptionResult], podpowiedz: Int) -> Bool {
+        wyniki.contains { wynik in
+            let okna = Dictionary(grouping: wynik.segments, by: \.seek)
+            return okna.values.contains { segmenty in
+                let tokeny = segmenty.reduce(0) { $0 + $1.tokens.count }
+                // Wynik biblioteki pomija prompt poprzedzający start transkrypcji.
+                return tokeny + (podpowiedz > 0 ? podpowiedz + 1 : 0) >= Constants.maxTokenContext - 2
+            }
+        }
     }
 
     /// Ticket 12 pobiera model. Tu tylko lokalny cache, bez sieci.

@@ -33,6 +33,7 @@ final class AudioRecorder {
     var onLimitCzasu: (([Float]) -> Void)?
     var onPoziom: ((Float, Double) -> Void)?
     var onZatrzymanie: (() -> Void)?
+    var onProbki: (([Float]) -> Void)?
     var onPierwszeProbki: (() -> Void)?
     var onBrakDzwieku: (() -> Void)?
     var onZmianaKonfiguracji: ((Double) -> Void)?
@@ -467,7 +468,9 @@ final class AudioRecorder {
             pokazanoOdbiorDzwieku = true
             onPierwszeProbki?()
         }
-        for i in 0..<count { samples.append(data[i]) }
+        let fragment = Array(UnsafeBufferPointer(start: data, count: count))
+        samples.append(contentsOf: fragment)
+        onProbki?(fragment)
     }
 
     // MARK: - Helpers

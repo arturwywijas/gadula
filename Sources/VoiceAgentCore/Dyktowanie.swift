@@ -12,9 +12,11 @@ public struct Nagranie: Equatable, Sendable {
 
 public struct Transkrypt: Equatable, Sendable {
     public let tekst: String
+    public let surowyTekst: String
 
-    public init(tekst: String) {
+    public init(tekst: String, surowyTekst: String? = nil) {
         self.tekst = tekst
+        self.surowyTekst = surowyTekst ?? tekst
     }
 }
 
@@ -47,19 +49,34 @@ public enum StanIkony: Equatable, Sendable {
 
 @MainActor
 public protocol AudioCapturing: AnyObject {
+    var poProbkach: (([Float]) -> Void)? { get set }
     func start() async throws
     func stop() async -> Nagranie
+}
+
+extension AudioCapturing {
+    public var poProbkach: (([Float]) -> Void)? { get { nil } set {} }
 }
 
 public enum BladTranskrypcji: Error, Equatable {
     case modelNiegotowy
     case nieudana
+    case zaDlugaWypowiedz
 }
 
 @MainActor
 public protocol Transcribing: AnyObject {
+    func rozpocznijSesje()
+    func przyjmijProbki(_ pcm: [Float])
+    func anulujSesje()
     func transcribe(nagranie: Nagranie, jezyk: String) async throws -> Transkrypt
     func modelGotowy() async -> Bool
+}
+
+extension Transcribing {
+    public func rozpocznijSesje() {}
+    public func przyjmijProbki(_ pcm: [Float]) {}
+    public func anulujSesje() {}
 }
 
 @MainActor
@@ -81,6 +98,15 @@ extension PermissionChecking {
 
 @MainActor
 public final class KoordynatorDyktowania {
+    public var poZmianieGotowosci: ((GotowoscDyktowania) -> Void)?
+    public private(set) var gotowosc: GotowoscDyktowania = .ukryta {
+        didSet { if oldValue != gotowosc { poZmianieGotowosci?(gotowosc) } }
+    }
+    public func mikrofonOdbieraDzwiek() {
+        guard stan == .nagrywanie, !zatrzymuje else { return }
+        gotowosc = .gotowa
+    }
+    public private(set) var ostatniSurowyTranskrypt: String?
     private var sesja: UInt64 = 0
     private var rozpoczyna = false
     private var zatrzymuje = false
@@ -90,7 +116,10 @@ public final class KoordynatorDyktowania {
     public var poZakonczeniuSesji: (() -> Void)?
     public private(set) var stan: StanSesji = .bezczynny {
         didSet {
-            if oldValue != .bezczynny && stan == .bezczynny { poZakonczeniuSesji?() }
+            if oldValue != .bezczynny && stan == .bezczynny {
+                gotowosc = pokazujeBlad ? .blad : .ukryta
+                poZakonczeniuSesji?()
+            }
         }
     }
     public private(set) var poziomWejsciaMikrofonuDb: Float?
@@ -130,6 +159,10 @@ public final class KoordynatorDyktowania {
         self.transcribing = transcribing
         self.inserting = inserting
         self.permissions = permissions
+        audio.poProbkach = { [weak self] pcm in
+            guard let self, self.stan == .nagrywanie else { return }
+            self.transcribing.przyjmijProbki(pcm)
+        }
     }
 
     public func handleWyzwalacz() async {
@@ -142,12 +175,7 @@ public final class KoordynatorDyktowania {
             rozpoczyna = true
             defer { if sesja == id { rozpoczyna = false } }
             pokazujeBlad = false
-            let gotowy = await transcribing.modelGotowy()
-            guard sesja == id else { return }
-            if !gotowy {
-                oznaczBlad("Model niegotowy.")
-                return
-            }
+            gotowosc = .model
             if !permissions.mikrofon {
                 let granted = await permissions.poprosOMikrofon()
                 guard sesja == id else { return }
@@ -157,7 +185,15 @@ public final class KoordynatorDyktowania {
                     return
                 }
             }
+            let gotowy = await transcribing.modelGotowy()
+            guard sesja == id else { return }
+            if !gotowy {
+                oznaczBlad("Model niegotowy.")
+                return
+            }
+            gotowosc = .mikrofon
             do {
+                transcribing.rozpocznijSesje()
                 stan = .nagrywanie
                 try await audio.start()
                 guard sesja == id, stan == .nagrywanie, !zatrzymuje else { return }
@@ -187,10 +223,14 @@ public final class KoordynatorDyktowania {
             zakonczPustaSesje()
             return
         }
+        gotowosc = .przetwarzanie
         stan = .transkrypcja
         do {
             let transkrypt = try await transcribing.transcribe(nagranie: nagranie, jezyk: "pl")
             guard sesja == id else { return }
+            if !ProgiSesji.transkryptJestPusty(transkrypt.surowyTekst) {
+                ostatniSurowyTranskrypt = transkrypt.surowyTekst
+            }
             let tekst = przygotujTekstDoWstawienia(transkrypt.tekst)
             if ProgiSesji.transkryptJestPusty(tekst) {
                 zakonczPustaSesje()
@@ -218,6 +258,9 @@ public final class KoordynatorDyktowania {
                 pokazujeBlad = false
                 stan = .bezczynny
             }
+        } catch BladTranskrypcji.zaDlugaWypowiedz {
+            guard sesja == id else { return }
+            oznaczBlad("Za długa wypowiedź bez pauz. Spróbuj dyktować krótszymi fragmentami.")
         } catch BladTranskrypcji.modelNiegotowy {
             guard sesja == id else { return }
             oznaczBlad("Model niegotowy.")
@@ -239,6 +282,7 @@ public final class KoordynatorDyktowania {
         ostatniKomunikat = nil
         pokazujeBlad = false
         stan = .bezczynny
+        gotowosc = .ukryta
     }
 
     public func wyczyscIkoneBledu() {
@@ -259,16 +303,19 @@ public final class KoordynatorDyktowania {
         ostatniWynikWstawienia = nil
         ostatniKomunikat = komunikat
         pokazujeBlad = true
+        gotowosc = .blad
         stan = .bezczynny
     }
 
     private func uniewaznijSesje() {
+        transcribing.anulujSesje()
         sesja &+= 1
         rozpoczyna = false
         zatrzymuje = false
     }
 
     private func zakonczPustaSesje() {
+        transcribing.anulujSesje()
         ostatniWynikWstawienia = nil
         ostatniKomunikat = nil
         pokazujeBlad = false
@@ -276,9 +323,11 @@ public final class KoordynatorDyktowania {
     }
 
     private func oznaczBlad(_ komunikat: String) {
+        transcribing.anulujSesje()
         ostatniWynikWstawienia = nil
         ostatniKomunikat = komunikat
         pokazujeBlad = true
+        gotowosc = .blad
         stan = .bezczynny
     }
 }

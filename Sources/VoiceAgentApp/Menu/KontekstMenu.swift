@@ -32,6 +32,8 @@ struct KontekstMenu {
     let cel: CelAkcjiMenu
     let magazyn: MagazynUstawien
     let odswiez: () -> Void
+    let moznaZmienicModel: Bool
+    let surowyTranskrypt: () -> String?
     let dyktuj: () -> Void
     let zakoncz: () -> Void
 

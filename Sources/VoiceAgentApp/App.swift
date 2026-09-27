@@ -155,6 +155,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             cel: celAkcji,
             magazyn: magazyn,
             odswiez: { [weak self] in self?.refreshStatus() },
+            moznaZmienicModel: koordynator.stan == .bezczynny && (koordynator.gotowosc == .ukryta || koordynator.gotowosc == .blad),
+            surowyTranskrypt: { [weak self] in self?.koordynator.ostatniSurowyTranskrypt },
             dyktuj: { [weak self] in self?.toggleSesji() },
             zakoncz: { NSApp.terminate(nil) }
         )

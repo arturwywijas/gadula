@@ -1,0 +1,246 @@
+{
+  "autor": "Codex, gadula-dyktowanie-20260927",
+  "data": "2026-09-27",
+  "srodowisko": "Apple M5, 16 GB, macOS 27.0, large-v3-turbo, Zosia 165 słów/min, mono 16 kHz",
+  "prywatnosc": "Wyłącznie syntetyczna mowa; bez nagrań użytkownika.",
+  "baseline_results": [
+    "PREPARE seconds=64.59921193122864",
+    "{\"attempt\":1,\"audio\":15.616,\"file\":\"zwykle.caf\",\"seconds\":1.2634440660476685,\"text\":\"Dzisiaj sprawdzamy szybkość dyktowania. Mikrofon działa prawidłowo i zapisuje każde zdanie. Spotkanie zaczyna się jutro o godzinie 15. Nie wysyłaj jeszcze wiadomości, poczekaj na potwierdzenie.\"}",
+    "{\"attempt\":2,\"audio\":15.616,\"file\":\"zwykle.caf\",\"seconds\":1.2174129486083984,\"text\":\"Dzisiaj sprawdzamy szybkość dyktowania. Mikrofon działa prawidłowo i zapisuje każde zdanie. Spotkanie zaczyna się jutro o godzinie 15. Nie wysyłaj jeszcze wiadomości, poczekaj na potwierdzenie.\"}",
+    "{\"attempt\":1,\"audio\":8.3840000000000003,\"file\":\"nazwy.caf\",\"seconds\":1.0406559705734253,\"text\":\"Gaduła pomaga zapisywać pomysły. Artur Wywija stworzy Frankentholz. Rozmawiamy o programie Unity i projekcie Superhierarchy.\"}",
+    "{\"attempt\":2,\"audio\":8.3840000000000003,\"file\":\"nazwy.caf\",\"seconds\":1.0407730340957642,\"text\":\"Gaduła pomaga zapisywać pomysły. Artur Wywija stworzy Frankentholz. Rozmawiamy o programie Unity i projekcie Superhierarchy.\"}"
+  ],
+  "baseline_extended-results": [
+    "PREPARE seconds=1.5635340213775635",
+    "{\"attempt\":1,\"audio\":0.62262499999999998,\"file\":\"krotkie.caf\",\"seconds\":0.00090110301971435547,\"text\":\"\"}",
+    "{\"attempt\":2,\"audio\":0.62262499999999998,\"file\":\"krotkie.caf\",\"seconds\":0.00079405307769775391,\"text\":\"\"}",
+    "{\"attempt\":1,\"audio\":36.543999999999997,\"file\":\"dlugie.caf\",\"seconds\":2.4244740009307861,\"text\":\"Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. Szósty punkt to zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści.\"}",
+    "{\"attempt\":2,\"audio\":36.543999999999997,\"file\":\"dlugie.caf\",\"seconds\":2.374629020690918,\"text\":\"Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. Szósty punkt to zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści.\"}"
+  ],
+  "wersja_0_2_0": [
+    {
+      "afterStop": 0.845304012298584,
+      "attempt": 1,
+      "audio": 0.622625,
+      "file": "krotkie.caf",
+      "mode": "batch",
+      "text": "Tak."
+    },
+    {
+      "afterStop": 0.8429460525512695,
+      "attempt": 2,
+      "audio": 0.622625,
+      "file": "krotkie.caf",
+      "mode": "batch",
+      "text": "Tak."
+    },
+    {
+      "afterStop": 0.8584810495376587,
+      "attempt": 1,
+      "audio": 0.622625,
+      "file": "krotkie.caf",
+      "mode": "stream",
+      "text": "Tak."
+    },
+    {
+      "afterStop": 0.8591690063476562,
+      "attempt": 2,
+      "audio": 0.622625,
+      "file": "krotkie.caf",
+      "mode": "stream",
+      "text": "Tak."
+    },
+    {
+      "afterStop": 0.0012240409851074219,
+      "attempt": 1,
+      "audio": 5,
+      "file": "cisza.wav",
+      "mode": "batch",
+      "text": ""
+    },
+    {
+      "afterStop": 0.0011720657348632812,
+      "attempt": 2,
+      "audio": 5,
+      "file": "cisza.wav",
+      "mode": "batch",
+      "text": ""
+    },
+    {
+      "afterStop": 0.0038030147552490234,
+      "attempt": 1,
+      "audio": 5,
+      "file": "cisza.wav",
+      "mode": "stream",
+      "text": ""
+    },
+    {
+      "afterStop": 0.0022459030151367188,
+      "attempt": 2,
+      "audio": 5,
+      "file": "cisza.wav",
+      "mode": "stream",
+      "text": ""
+    },
+    {
+      "afterStop": 7.276816010475159,
+      "attempt": 1,
+      "audio": 36.544,
+      "file": "dlugie.caf",
+      "mode": "batch",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. 6. Zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści."
+    },
+    {
+      "afterStop": 7.141857028007507,
+      "attempt": 2,
+      "audio": 36.544,
+      "file": "dlugie.caf",
+      "mode": "batch",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. 6. Zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści."
+    },
+    {
+      "afterStop": 1.022284984588623,
+      "attempt": 1,
+      "audio": 36.544,
+      "file": "dlugie.caf",
+      "mode": "stream",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. 6. Zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści."
+    },
+    {
+      "afterStop": 1.0092459917068481,
+      "attempt": 2,
+      "audio": 36.544,
+      "file": "dlugie.caf",
+      "mode": "stream",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. 6. Zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści."
+    },
+    {
+      "afterStop": 1.2906410694122314,
+      "attempt": 1,
+      "audio": 8.384,
+      "file": "nazwy.caf",
+      "mode": "batch",
+      "text": "Gaduła pomaga zapisywać pomysły. Artur Wywijas tworzy Frankentools. Rozmawiamy o programie Unity i projekcie Super Hierarchy."
+    },
+    {
+      "afterStop": 1.3009389638900757,
+      "attempt": 2,
+      "audio": 8.384,
+      "file": "nazwy.caf",
+      "mode": "batch",
+      "text": "Gaduła pomaga zapisywać pomysły. Artur Wywijas tworzy Frankentools. Rozmawiamy o programie Unity i projekcie Super Hierarchy."
+    },
+    {
+      "afterStop": 1.2790460586547852,
+      "attempt": 1,
+      "audio": 8.384,
+      "file": "nazwy.caf",
+      "mode": "stream",
+      "text": "Gaduła pomaga zapisywać pomysły. Artur Wywijas tworzy Frankentools. Rozmawiamy o programie Unity i projekcie Super Hierarchy."
+    },
+    {
+      "afterStop": 1.2325299978256226,
+      "attempt": 2,
+      "audio": 8.384,
+      "file": "nazwy.caf",
+      "mode": "stream",
+      "text": "Gaduła pomaga zapisywać pomysły. Artur Wywijas tworzy Frankentools. Rozmawiamy o programie Unity i projekcie Super Hierarchy."
+    },
+    {
+      "afterStop": 1.8326719999313354,
+      "attempt": 1,
+      "audio": 5.76025,
+      "file": "cicha-koncowka.wav",
+      "mode": "batch",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Nie."
+    },
+    {
+      "afterStop": 1.8396860361099243,
+      "attempt": 2,
+      "audio": 5.76025,
+      "file": "cicha-koncowka.wav",
+      "mode": "batch",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Nie."
+    },
+    {
+      "afterStop": 1.2259559631347656,
+      "attempt": 1,
+      "audio": 5.76025,
+      "file": "cicha-koncowka.wav",
+      "mode": "stream",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Nie."
+    },
+    {
+      "afterStop": 1.2458499670028687,
+      "attempt": 2,
+      "audio": 5.76025,
+      "file": "cicha-koncowka.wav",
+      "mode": "stream",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Nie."
+    },
+    {
+      "afterStop": 1.8360120058059692,
+      "attempt": 1,
+      "audio": 14.76025,
+      "file": "dluga-pauza.wav",
+      "mode": "batch",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Nie."
+    },
+    {
+      "afterStop": 1.83458411693573,
+      "attempt": 2,
+      "audio": 14.76025,
+      "file": "dluga-pauza.wav",
+      "mode": "batch",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Nie."
+    },
+    {
+      "afterStop": 1.2584959268569946,
+      "attempt": 1,
+      "audio": 14.76025,
+      "file": "dluga-pauza.wav",
+      "mode": "stream",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Nie."
+    },
+    {
+      "afterStop": 1.205651044845581,
+      "attempt": 2,
+      "audio": 14.76025,
+      "file": "dluga-pauza.wav",
+      "mode": "stream",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Nie."
+    },
+    {
+      "afterStop": 4.614952921867371,
+      "attempt": 1,
+      "audio": 23.872,
+      "file": "gesta.caf",
+      "mode": "batch",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. Szósty punkt to zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści."
+    },
+    {
+      "afterStop": 4.5849069356918335,
+      "attempt": 2,
+      "audio": 23.872,
+      "file": "gesta.caf",
+      "mode": "batch",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. Szósty punkt to zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści."
+    },
+    {
+      "afterStop": 4.743105053901672,
+      "attempt": 1,
+      "audio": 23.872,
+      "file": "gesta.caf",
+      "mode": "stream",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. Szósty punkt to zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści."
+    },
+    {
+      "afterStop": 4.809653043746948,
+      "attempt": 2,
+      "audio": 23.872,
+      "file": "gesta.caf",
+      "mode": "stream",
+      "text": "Pierwszy punkt dotyczy przygotowania planu pracy na następny tydzień. Drugi punkt to sprawdzenie wszystkich zapisanych wcześniej pomysłów. Trzeci punkt dotyczy spotkania zespołu i ustalenia kolejności działań. Czwarty punkt to rozmowa o działaniu mikrofonu i szybkości aplikacji. Piąty punkt dotyczy dokumentacji oraz wyników wykonanych testów. Szósty punkt to zapisanie ustaleń i przygotowanie nowej wersji programu. Nie wysyłaj tej wiadomości przed sprawdzeniem jej treści."
+    }
+  ]
+}

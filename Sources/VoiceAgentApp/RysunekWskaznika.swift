@@ -11,6 +11,7 @@ struct DrobinaWskaznika {
 
 @MainActor
 final class ObrazPigulki: ObservableObject {
+    @Published var gotowosc: GotowoscDyktowania = .mikrofon
     @Published var poziom: Float = 0
     @Published var widoczna = false
     @Published var styl: StylWskaznikaNagrywania = .iskry
@@ -55,18 +56,39 @@ final class ObrazPigulki: ObservableObject {
 struct RysunekWskaznika: View {
     @ObservedObject var obraz: ObrazPigulki
 
+    private var kolor: Color {
+        switch obraz.gotowosc {
+        case .gotowa: .green
+        case .blad: .red
+        default: .yellow
+        }
+    }
     var body: some View {
-        Group {
-            switch obraz.styl {
-            case .slupki: SlupkiNagrywania(poziom: obraz.poziom)
-            case .iskry: IskryNagrywania(drobiny: obraz.drobiny, czas: obraz.czas)
-            case .nicSwiatla: NicSwiatla(poziom: obraz.poziom)
+        VStack(spacing: 6) {
+            HStack(spacing: 7) {
+                Image(systemName: obraz.gotowosc == .gotowa ? "mic.fill" : (obraz.gotowosc == .blad ? "exclamationmark.circle.fill" : "hourglass"))
+                    .foregroundStyle(kolor)
+                Text(obraz.gotowosc.komunikat)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white)
             }
+            .padding(.horizontal, 13).padding(.vertical, 8)
+            .background(.black.opacity(0.86), in: Capsule())
+            .overlay(Capsule().stroke(kolor.opacity(0.7), lineWidth: 1))
+            Group {
+                switch obraz.styl {
+                case .slupki: SlupkiNagrywania(poziom: obraz.poziom)
+                case .iskry: IskryNagrywania(drobiny: obraz.drobiny, czas: obraz.czas)
+                case .nicSwiatla: NicSwiatla(poziom: obraz.poziom)
+                }
+            }
+            .opacity(obraz.gotowosc == .gotowa ? 1 : 0)
         }
         .opacity(obraz.widoczna ? 1 : 0)
         .animation(.easeInOut(duration: 0.14), value: obraz.widoczna)
         .allowsHitTesting(false)
-        .accessibilityHidden(true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(obraz.gotowosc.komunikat)
     }
 }
 
@@ -78,7 +100,7 @@ private struct SlupkiNagrywania: View {
         HStack(spacing: 4) {
             ForEach(wagi.indices, id: \.self) { i in
                 Capsule()
-                    .fill(.primary.opacity(0.85))
+                    .fill(.green.opacity(0.9))
                     .frame(width: 3, height: 3 + 15 * CGFloat(poziom) * wagi[i])
             }
         }
@@ -103,7 +125,7 @@ private struct IskryNagrywania: View {
                 // Ciemna obwodka pozostaje widoczna na bieli; jasny rdzen na ciemnym tle.
                 let obwodka = Path(ellipseIn: CGRect(x: x - 1.65, y: y - 1.65, width: 3.3, height: 3.3))
                 context.fill(obwodka, with: .color(.black.opacity(0.7 * alfa)))
-                let kolor: Color = drobina.odcien == 0 ? .cyan : (drobina.odcien == 1 ? .white : Color(red: 0.8, green: 0.65, blue: 1))
+                let kolor: Color = drobina.odcien == 0 ? .green : (drobina.odcien == 1 ? .white : .mint)
                 let rdzen = Path(ellipseIn: CGRect(x: x - 1, y: y - 1, width: 2, height: 2))
                 context.fill(rdzen, with: .color(kolor.opacity(alfa)))
             }
@@ -130,7 +152,7 @@ private struct NicSwiatla: View {
             swiatlo.move(to: lewy)
             swiatlo.addLine(to: prawy)
             let jasnosc = 0.2 + 0.8 * Double(poziom)
-            let gradient = Gradient(colors: [.clear, .cyan.opacity(jasnosc), .white.opacity(jasnosc), .purple.opacity(jasnosc), .clear])
+            let gradient = Gradient(colors: [.clear, .green.opacity(jasnosc), .white.opacity(jasnosc), .mint.opacity(jasnosc), .clear])
             context.stroke(swiatlo, with: .linearGradient(gradient, startPoint: lewy, endPoint: prawy),
                            lineWidth: 0.7 + CGFloat(poziom))
         }

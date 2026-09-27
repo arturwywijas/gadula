@@ -54,6 +54,10 @@ final class TranskrypcjaZDziennikiem: Transcribing {
         wewnetrzna = LokalnaTranskrypcja(magazyn: magazyn)
     }
 
+    func rozpocznijSesje() { wewnetrzna.rozpocznijSesje() }
+    func przyjmijProbki(_ pcm: [Float]) { wewnetrzna.przyjmijProbki(pcm) }
+    func anulujSesje() { wewnetrzna.anulujSesje() }
+
     func modelGotowy() async -> Bool {
         await wewnetrzna.modelGotowy()
     }
@@ -87,7 +91,8 @@ final class TranskrypcjaZDziennikiem: Transcribing {
 enum ZlozeniePortow {
     @MainActor
     static func koordynator(magazyn: MagazynUstawien, transkrypcja: TranskrypcjaZDziennikiem) -> KoordynatorDyktowania {
-        let audio = MikrofonAudioCapturing(magazyn: magazyn, wskaznik: PigulkaNagrywania(magazyn: magazyn))
+        let wskaznik = PigulkaNagrywania(magazyn: magazyn)
+        let audio = MikrofonAudioCapturing(magazyn: magazyn, wskaznik: wskaznik)
         let id = magazyn.string(klucz: KluczModelu.id, domyslna: KluczModelu.domyslny)
         KatalogModelu.wspolny.uruchomDla(id: id)
         let k = KoordynatorDyktowania(
@@ -96,6 +101,7 @@ enum ZlozeniePortow {
             inserting: SchowekTextInserting(),
             permissions: MacPermissionChecking()
         )
+        k.poZmianieGotowosci = { [weak wskaznik] stan in wskaznik?.ustawGotowosc(stan) }
         audio.podlacz(koordynator: k)
         return k
     }

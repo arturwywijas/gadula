@@ -1,6 +1,6 @@
 # Jak działa Gaduła
 
-Szczegółowy opis działania Gaduły 0.1.1. Instalację i skrót opisuje [README](../README.md).
+Szczegółowy opis działania Gaduły 0.2.0. Instalację i skrót opisuje [README](../README.md).
 
 ## Skrót i tryb
 
@@ -19,7 +19,7 @@ Przy połączeniu klawiatury przez Bluetooth skrót może reagować zauważalnie
 
 | Uprawnienie | Zastosowanie |
 |---|---|
-| Mikrofon | Nagrywanie głosu. System pyta przy pierwszej próbie nagrania wymagającej zgody, a nie przy każdym pierwszym użyciu skrótu. Przed gotowością modelu próba może zakończyć się bez pytania. |
+| Mikrofon | Nagrywanie głosu. System pyta przy pierwszej próbie nagrania wymagającej zgody, a nie przy każdym pierwszym użyciu skrótu. Pytanie o zgodę poprzedza końcowe przygotowanie modelu. |
 | Dostępność | Symulowanie Cmd-V, nasłuch samego modyfikatora, np. Fn, oraz Escape w innych aplikacjach. |
 
 Monitorowanie wprowadzania (Input Monitoring) nie jest tu przedstawiane jako obowiązkowa zgoda. Nie potwierdzono przypadku, w którym trzeba ją nadać dla tej aplikacji.
@@ -32,7 +32,19 @@ Automatyczne wstawianie jest próbą wysłania Cmd-V. Wymaga Dostępności i akt
 
 Gdy brakuje Dostępności, po udanym nagraniu i transkrypcji tekst pozostaje w schowku, a menu pokazuje **Wciśnij Cmd-V**. Ta ścieżka wymaga działającego sposobu rozpoczęcia nagrania, np. kombinacji Option+Space; nie jest gwarancją działania Fn bez uprawnienia. Aplikacja nie wykrywa ręcznego wklejenia i w tej ścieżce nie przywraca poprzedniej zawartości schowka.
 
-Przed rozpoznaniem aplikacja wyrównuje poziom próbek. Cel 0,08 dotyczy mediany RMS aktywnych ramek 20 ms; wzmocnienie nie przekracza 12. Ograniczenie szczytu korzysta z 85. percentyla szczytów aktywnych ramek, a końcowy ogranicznik utrzymuje próbki w zakresie ±0,95. Wzmocnienie wymaga co najmniej ośmiu aktywnych ramek, czyli łącznie 160 ms aktywności; krótsza aktywność, w tym krótki szum, pozostaje bez wzmocnienia. Są to reguły przetwarzania sygnału, nie potwierdzenie poprawy jakości rozpoznawania. Wyników jakości nie zmierzono.
+Przed rozpoznaniem aplikacja wyrównuje poziom próbek. Cel 0,08 dotyczy mediany RMS aktywnych ramek 20 ms; wzmocnienie nie przekracza 12. Ograniczenie szczytu korzysta z 85. percentyla szczytów aktywnych ramek, a końcowy ogranicznik utrzymuje próbki w zakresie ±0,95. Wzmocnienie wymaga co najmniej ośmiu aktywnych ramek, czyli łącznie 160 ms aktywności; krótsza aktywność, w tym krótki szum, pozostaje bez wzmocnienia. Są to reguły przetwarzania sygnału, nie potwierdzenie poprawy jakości rozpoznawania. Wyniki kontrolowanych prób 0.2.0 są w [raporcie dyktowania](DYKTOWANIE-0.2.0.md); nie izolują wpływu samej normalizacji.
+
+## Tekst i słownik nazw
+
+Menu **Tekst** pozwala wybrać **Wierny zapis** (domyślnie) lub **Uporządkowany tekst**. Pierwszy zachowuje wynik rozpoznawania. Drugi porządkuje odstępy i dzieli długą wypowiedź na akapity po trzy zdania (od 400 znaków i pięciu zdań, gdy nie ma już podziałów ani cytatów). Nie parafrazuje treści. Kropki i przecinki nadal rozpoznaje model.
+
+Możesz wypowiedzieć osobno **Nowy akapit**, **Nowy wiersz** lub **Nowy punkt**. Komenda musi zostać rozpoznana jako osobne zdanie, na początku albo po znaku kończącym poprzednie zdanie. Przykład: „Kup mleko. Nowy punkt. Kup chleb.” tworzy nowy punkt przed „Kup chleb”. Zwykłe użycie tych słów w zdaniu oraz komendy w cudzysłowach pozostają treścią.
+
+**Kopiuj tekst przed formatowaniem** odzyskuje ostatni niepusty wynik modelu. Jest przechowywany tylko w pamięci aplikacji do następnego prawidłowego wyniku albo zamknięcia. Anulowanie lub puste nagranie go nie usuwa. Kopiowanie zastępuje bieżący schowek, bez automatycznego wklejania.
+
+W **Słownik nazw…** wpisz po jednej nazwie w wierszu, np. nazwisko, markę lub termin branżowy. Limit wynosi 40 nazw, 80 znaków na nazwę i 1000 znaków łącznie. Model otrzymuje ograniczoną podpowiedź; przy długiej liście końcowe nazwy mogą się nie zmieścić. To wskazówka, a nie wymuszenie pisowni. Jeśli podpowiedź zabierze miejsce potrzebne na tekst wypowiedzi, aplikacja ponawia rozpoznanie tego fragmentu bez słownika. Może to potrwać dłużej. Gdy nadal brakuje miejsca, prosi o krótsze fragmenty zamiast wstawiać urwany wynik. Słownik i wybór trybu zapisują się lokalnie i obowiązują od następnej sesji. Aplikacja nie uczy się automatycznie na własnych wynikach ani nie obserwuje poprawek w innych aplikacjach.
+
+Rozpoznawanie może zaczynać się jeszcze podczas nagrywania. Podział czeka na pauzę i powrót mowy, dzięki czemu końcowa cisza pozostaje przy ostatnim zdaniu. Wszystkie próbki są zachowane. Bez odpowiedniej pauzy więcej pracy zostaje po zatrzymaniu. Błąd przetwarzania fragmentu uruchamia próbę z całym zachowanym nagraniem. Wynik trafia do pola tekstowego dopiero po zakończeniu dyktowania.
 
 ## Model i prywatność
 
@@ -44,7 +56,7 @@ WhisperKit pobiera z Hugging Face zasoby rozpoznawania, w tym wagi modelu, konfi
 
 ## Wskaźnik nagrywania i autostart
 
-Wskaźnik poziomu dźwięku pojawia się na dole ekranu dopiero po otrzymaniu pierwszych próbek. Jeśli przez co najmniej cztery sekundy mikrofon nie dostarcza próbek, sesja kończy się komunikatem. Cisza z poprawnie przesyłanymi próbkami nie jest traktowana jako awaria. W menu **Wskaźnik nagrywania** są **Iskry** (domyślne), **Słupki** i **Nić światła**. Wybór zapisuje się i obowiązuje od następnego nagrania bez restartu.
+Po użyciu skrótu na dole ekranu pojawia się żółty komunikat przygotowania modelu lub mikrofonu. Poczekaj na zielone **Możesz mówić**: ten stan wymaga odebrania pierwszych próbek audio. Sama deklaracja uruchomienia silnika nie wystarcza. Animacja reaguje wtedy na poziom wejścia. Podczas rozpoznawania widzisz **Przetwarzam tekst**, a po błędzie przez chwilę czerwony komunikat odsyłający do menu. Kolorom towarzyszą tekst i symbol. Zielony stan potwierdza odbiór próbek, nie gwarantuje słyszalności głosu ani poprawności wybranego mikrofonu. Jeśli przez co najmniej cztery sekundy mikrofon nie dostarcza próbek, sesja kończy się komunikatem. Cisza z poprawnie przesyłanymi próbkami nie jest traktowana jako awaria. W menu **Wskaźnik nagrywania** są **Iskry** (domyślne), **Słupki** i **Nić światła**. Wybór zapisuje się i obowiązuje od następnego nagrania bez restartu.
 
 Menu zawiera opcję **Uruchamiaj przy logowaniu**. Jej działania po ponownym zalogowaniu na złożonej aplikacji nie sprawdzono. Uruchomienie przez `swift run` nie zastępuje testu autostartu aplikacji `.app`.
 
@@ -71,7 +83,7 @@ Wymagania toolchainu oraz instrukcja budowy pliku wykonywalnego, testów, skład
 
 ## Testy ze źródeł
 
-Zestaw VoiceAgentCoreTests obejmuje **100 przypadków**. Osobny cel AudioTapGuardTests sprawdza ochronę instalacji tapu audio przed wyjątkiem Objective-C. Dodatkowy zestaw testuje schowek, strukturę wag, blokadę instancji, kopiowanie audio i zdarzenia adaptera. Testy rdzenia używają atrap portów; nie sprawdzają rzeczywistego mikrofonu, klawiatury ani interfejsu na urządzeniu. Polecenia uruchomienia i zakres testów opisuje [docs/BUILDING.md](BUILDING.md).
+Zestaw VoiceAgentCoreTests obejmuje **136 przypadków**. Osobny cel AudioTapGuardTests sprawdza ochronę instalacji tapu audio przed wyjątkiem Objective-C. Dodatkowy zestaw testuje schowek, strukturę wag, blokadę instancji, kopiowanie audio i zdarzenia adaptera. Testy rdzenia używają atrap portów; nie sprawdzają rzeczywistego mikrofonu, klawiatury ani interfejsu na urządzeniu. Polecenia uruchomienia i zakres testów opisuje [docs/BUILDING.md](BUILDING.md).
 
 ## Licencje
 

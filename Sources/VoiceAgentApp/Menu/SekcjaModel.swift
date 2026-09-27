@@ -76,6 +76,7 @@ enum SekcjaModel: BudowniczySekcjiMenu {
         }
 
         item.submenu = podmenu
+        item.isEnabled = kontekst.moznaZmienicModel
         return [item]
     }
 }

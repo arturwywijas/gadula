@@ -39,6 +39,7 @@ final class PigulkaNagrywania: NSObject, WskaznikNagrywania {
     private var panel: PanelPigulki?
     private var ukrywanie: Task<Void, Never>?
     private var odswiezanie: Timer?
+    private var wygaszenieBledu: Task<Void, Never>?
 
     init(magazyn: MagazynUstawien) {
         self.magazyn = magazyn
@@ -49,6 +50,19 @@ final class PigulkaNagrywania: NSObject, WskaznikNagrywania {
             name: NSApplication.didChangeScreenParametersNotification, object: nil)
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(wygas),
             name: NSWorkspace.willSleepNotification, object: nil)
+    }
+
+    func ustawGotowosc(_ gotowosc: GotowoscDyktowania) {
+        wygaszenieBledu?.cancel()
+        obraz.gotowosc = gotowosc
+        guard gotowosc != .ukryta else { zakoncz(); return }
+        if !stan.nagrywa { rozpocznij() }
+        if gotowosc == .blad {
+            wygaszenieBledu = Task { [weak self] in
+                do { try await Task.sleep(for: .seconds(4)) } catch { return }
+                self?.zakoncz()
+            }
+        }
     }
 
     func rozpocznij() {
@@ -114,12 +128,12 @@ final class PigulkaNagrywania: NSObject, WskaznikNagrywania {
             ?? NSScreen.screens.first else { return }
         if obraz.styl == .nicSwiatla {
             panel.setFrame(NSRect(x: ekran.frame.minX, y: ekran.frame.minY,
-                                  width: ekran.frame.width, height: 6), display: true)
+                                  width: ekran.frame.width, height: 70), display: true)
             return
         }
         panel.setContentSize(obraz.styl == .slupki
-                             ? NSSize(width: 76, height: 28)
-                             : NSSize(width: 140, height: 48))
+                             ? NSSize(width: 270, height: 76)
+                             : NSSize(width: 270, height: 96))
         let obszar = ekran.visibleFrame
         let x = max(obszar.minX, min(ekran.frame.midX - panel.frame.width / 2,
                                    obszar.maxX - panel.frame.width))

@@ -48,6 +48,7 @@ final class AudioRecorder {
     var state: State = .idle
     var onPoziom: ((Float, Double) -> Void)?
     var onZatrzymanie: (() -> Void)?
+    var onProbki: (([Float]) -> Void)?
     var onPierwszeProbki: (() -> Void)?
     var onBrakDzwieku: (() -> Void)?
     var uzywaneUrzadzenieID: UInt32? { 1 }
@@ -100,7 +101,10 @@ struct Proba {
         await k.handleWyzwalacz()
         let recorder = AudioRecorder.ostatni!
         assert(wskaznik.pokazania == 0, "Wskaźnik czeka na prawdziwe próbki")
+        assert(k.gotowosc == .mikrofon, "engine.start nie oznacza gotowości")
         recorder.onPierwszeProbki?()
+        assert(k.gotowosc == .gotowa, "Zielony dopiero po PCM")
+        print("PASS adapter: gotowość mikrofonu dopiero po pierwszych próbkach")
         recorder.onZmianaKonfiguracji?(0.6)
         assert(recorder.przeladowania == 0)
         recorder.onZmianaKonfiguracji?(2)

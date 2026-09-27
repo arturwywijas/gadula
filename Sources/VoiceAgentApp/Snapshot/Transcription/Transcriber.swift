@@ -15,11 +15,12 @@ protocol Transcriber: Sendable {
     /// `fallbackCount` is the maximum number of decoder retries (with bumped
     /// temperatures) when the first greedy pass produces a degenerate result.
     /// 0 = no retries (fastest), 1 = one safety-net retry, 3 = aggressive.
-    func transcribe(samples: [Float], language: String, fallbackCount: Int) async throws -> String?
+    func transcribe(samples: [Float], language: String, fallbackCount: Int, slownik: [String]) async throws -> String?
 
 }
 
 enum TranscriberError: Error, Equatable {
     case modelNotLoaded
     case empty
+    case contextLimit
 }

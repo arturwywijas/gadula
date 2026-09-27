@@ -25,7 +25,7 @@ swift run VoiceAgentCoreTests
 swift run AudioTapGuardTests
 ```
 
-`VoiceAgentCoreTests` to wykonywalny harness obejmujący 100 przypadków logiki rdzenia. `AudioTapGuardTests` sprawdza osłonę Objective-C, która zamienia wyjątek z instalacji tapu audio w kontrolowany wynik.
+`VoiceAgentCoreTests` to wykonywalny harness obejmujący 136 przypadków logiki rdzenia. `AudioTapGuardTests` sprawdza osłonę Objective-C, która zamienia wyjątek z instalacji tapu audio w kontrolowany wynik.
 
 `Tests/AudioReconfigurationTests/main.swift` nie jest celem pakietu SwiftPM. Plik deklaruje zastępcze typy aplikacji, potrzebne do testu adaptera audio, i nie można go dołączyć jako zwykłego celu bez konfliktu ze źródłami produkcyjnymi. Nie uruchamia się go poleceniem `swift run`.
 
@@ -46,6 +46,21 @@ bash Tests/test-microphone.sh 3
 
 Testy automatyczne nie sprawdzają fizycznej klawiatury ani działania wszystkich programów docelowych.
 
+## Kontrolowane próby rozpoznawania
+
+Wymagają lokalnie pobranego modelu `large-v3-turbo`, głosu macOS Zosia i Pythona 3. Używają wyłącznie mowy syntetycznej i ustawień w pamięci; nie nagrywają użytkownika ani nie zmieniają jego słownika. Dwa przebiegi każdego pliku w każdym trybie pozwalają porównać pracę po zatrzymaniu z przetwarzaniem przyrostowym. Skrypt wypisuje tekst próbek i czasy, dlatego nie podawaj prywatnych nagrań.
+
+```sh
+swift build -c release --product Gadula
+python3 Tests/TranscriptionBenchmark/fixtures.py
+GADULA_PRODUCTS_PATH="$(swift build -c release --show-bin-path)" bash Tests/test-transcription.sh \
+  .build/transcription-fixtures/{krotkie.caf,cisza.wav,dlugie.caf,nazwy.caf,cicha-koncowka.wav,dluga-pauza.wav,gesta.caf} > .build/stt-results.log
+python3 Tests/TranscriptionBenchmark/validate.py .build/stt-results.log \
+  krotkie.caf cisza.wav dlugie.caf nazwy.caf cicha-koncowka.wav dluga-pauza.wav gesta.caf
+```
+
+Walidator sprawdza obecność każdego przebiegu, krótką odpowiedź, kompletność siedmiu zdań, zachowanie negacji, nazwy i brak dopisku po ostatnim zdaniu. Jest testem regresji tych próbek, nie pełnym pomiarem WER.
+
 ## Logi systemowe
 
 Trwałe wpisy aplikacji można odczytać przez Unified Logging:
@@ -57,6 +72,8 @@ log show --last 5m --style compact --predicate 'process == "Gadula" AND subsyste
 ## Złożenie aplikacji `.app`
 
 Skrypt `packaging/zloz-bundel.sh` buduje produkt w trybie release, składa `dist/Gaduła.app`, kopiuje do niego zasoby SwiftPM i podpisuje wynik. Domyślnym trybem jest podpis ad hoc, który nie wymaga certyfikatu i nie oznacza notaryzacji.
+
+Skrypt używa toolchainu wybranego przez `xcode-select` (można podać `DEVELOPER_DIR`). Opcjonalny `KATALOG_BUDOWY` pozwala użyć istniejącego cache SwiftPM. Katalog produktów jest odczytywany z `swift build --show-bin-path`. Poprzedni bundel ze stagingu jest pakowany i zachowywany w `dist/_archiwum/`.
 
 Skrypt nie zamyka działającej aplikacji. Jeśli Gaduła działa z docelowej ścieżki `dist/Gaduła.app`, skrypt zatrzyma się z komunikatem; zamknij tę instancję ręcznie przed kolejnym uruchomieniem.
 

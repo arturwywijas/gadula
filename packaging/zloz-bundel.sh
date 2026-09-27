@@ -9,7 +9,7 @@
 # myślnikiem jako tożsamością, bo zmieniłoby to tożsamość podpisu.
 set -euo pipefail
 
-export DEVELOPER_DIR=${DEVELOPER_DIR:-/Library/Developer/CommandLineTools}
+export DEVELOPER_DIR=${DEVELOPER_DIR:-$(xcode-select -p)}
 REPO="${0:A:h:h}"
 APP="$REPO/dist/Gaduła.app"
 BINARNY="$APP/Contents/MacOS/Gadula"
@@ -94,17 +94,25 @@ sprawdzCzyGadulaDziala
 
 echo "== 1. Build release =="
 cd "$REPO"
-swift build -c release --product Gadula
+KATALOG_BUDOWY="${KATALOG_BUDOWY:-$REPO/.build}"
+swift build --scratch-path "$KATALOG_BUDOWY" -c release --product Gadula
+PRODUKTY="$(swift build --scratch-path "$KATALOG_BUDOWY" -c release --show-bin-path)"
+[[ -x "$PRODUKTY/Gadula" ]] || blad "Brak pliku wykonywalnego w $PRODUKTY."
 
 echo "== 2. Złożenie bundla =="
 sprawdzCzyGadulaDziala
-rm -rf "$APP"
+if [[ -d "$APP" ]]; then
+  mkdir -p "$REPO/dist/_archiwum"
+  KOPIA="$(mktemp -d "$REPO/dist/_archiwum/bundle.XXXXXX")"
+  ditto -c -k --keepParent "$APP" "$KOPIA/poprzedni-bundel.zip"
+  mv "$APP" "$KOPIA/Gadula.app-zachowana"
+fi
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$REPO/.build/release/Gadula" "$APP/Contents/MacOS/Gadula"
+cp "$PRODUKTY/Gadula" "$APP/Contents/MacOS/Gadula"
 cp "$REPO/packaging/Info.plist" "$APP/Contents/Info.plist"
 cp "$REPO/packaging/ikona/Gadula.icns" "$APP/Contents/Resources/Gadula.icns"
 setopt local_options null_glob
-for zasob in "$REPO"/.build/release/*.bundle; do
+for zasob in "$PRODUKTY"/*.bundle; do
   cp -R "$zasob" "$APP/Contents/Resources/"
   echo "zasoby: ${zasob:t}"
 done
