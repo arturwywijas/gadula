@@ -244,10 +244,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 enum VoiceAgentMain {
     static func main() {
+        let katalog = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/Gadula")
+        guard let blokada = try? BlokadaInstancji(url: katalog.appendingPathComponent("instance.lock")),
+              blokada.przejmij() else { return }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
         app.setActivationPolicy(.accessory)
-        app.run()
+        withExtendedLifetime(blokada) { app.run() }
     }
 }

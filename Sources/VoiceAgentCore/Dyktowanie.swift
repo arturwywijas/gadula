@@ -20,6 +20,7 @@ public struct Transkrypt: Equatable, Sendable {
 
 public enum WynikWstawienia: Equatable, Sendable {
     case wstawione
+    case wyslanoWklejenie
     case tylkoSchowek
     case nieudane
 }
@@ -199,11 +200,20 @@ public final class KoordynatorDyktowania {
             let wynik = await inserting.insert(tekst: tekst)
             guard sesja == id else { return }
             ostatniWynikWstawienia = wynik
-            if wynik == .tylkoSchowek {
+            switch wynik {
+            case .tylkoSchowek:
                 ostatniKomunikat = "wciśnij Cmd-V"
                 pokazujeBlad = true
                 stan = .bezczynny
-            } else {
+            case .nieudane:
+                ostatniKomunikat = "Nie udało się zachować tekstu w schowku."
+                pokazujeBlad = true
+                stan = .bezczynny
+            case .wyslanoWklejenie:
+                ostatniKomunikat = "Tekst jest w schowku. Jeśli nie został wklejony, wciśnij Cmd-V."
+                pokazujeBlad = false
+                stan = .bezczynny
+            case .wstawione:
                 ostatniKomunikat = nil
                 pokazujeBlad = false
                 stan = .bezczynny

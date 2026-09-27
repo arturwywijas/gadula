@@ -1,6 +1,6 @@
 # Jak działa Gaduła
 
-Szczegółowy opis działania Gaduły 0.1.0. Instalację i skrót opisuje [README](../README.md).
+Szczegółowy opis działania Gaduły 0.1.1. Instalację i skrót opisuje [README](../README.md).
 
 ## Skrót i tryb
 
@@ -20,7 +20,7 @@ Przy połączeniu klawiatury przez Bluetooth skrót może reagować zauważalnie
 | Uprawnienie | Zastosowanie |
 |---|---|
 | Mikrofon | Nagrywanie głosu. System pyta przy pierwszej próbie nagrania wymagającej zgody, a nie przy każdym pierwszym użyciu skrótu. Przed gotowością modelu próba może zakończyć się bez pytania. |
-| Dostępność | Symulowanie Cmd-V oraz nasłuch samego modyfikatora, np. Fn. |
+| Dostępność | Symulowanie Cmd-V, nasłuch samego modyfikatora, np. Fn, oraz Escape w innych aplikacjach. |
 
 Monitorowanie wprowadzania (Input Monitoring) nie jest tu przedstawiane jako obowiązkowa zgoda. Nie potwierdzono przypadku, w którym trzeba ją nadać dla tej aplikacji.
 
@@ -28,7 +28,7 @@ Wybór mikrofonu w menu zmienia **systemowe domyślne wejście dla całego Maca*
 
 Po rozpoczęciu nagrywania aplikacja próbuje odczytać poziom wejścia mikrofonu. Jeśli odczyt jest dostępny i wynosi mniej niż **−12 dB**, menu pokazuje wartość i wskazówkę, jak podnieść poziom w Ustawieniach systemowych → Dźwięk → Wejście. Aplikacja tylko odczytuje poziom i sama nie zmienia systemowej głośności wejścia.
 
-Automatyczne wstawianie jest próbą wysłania Cmd-V. Wymaga Dostępności i aktywnego edytowalnego pola, a aplikacja nie potwierdza, czy program docelowy odczytał tekst. W tej ścieżce po około 0,4 sekundy przywraca poprzedni tekst schowka; zgodność z każdym programem docelowym nie została sprawdzona.
+Automatyczne wstawianie jest próbą wysłania Cmd-V. Wymaga Dostępności i aktywnego edytowalnego pola, a aplikacja nie potwierdza, czy program docelowy odczytał tekst. Transkrypt pozostaje w schowku do następnego kopiowania. Gaduła nie przywraca automatycznie wcześniejszej zawartości, aby nie usuwać wyniku lub nowego kopiowania użytkownika. Menu informuje o możliwości ręcznego wklejenia; zgodność z każdym programem docelowym nie została sprawdzona.
 
 Gdy brakuje Dostępności, po udanym nagraniu i transkrypcji tekst pozostaje w schowku, a menu pokazuje **Wciśnij Cmd-V**. Ta ścieżka wymaga działającego sposobu rozpoczęcia nagrania, np. kombinacji Option+Space; nie jest gwarancją działania Fn bez uprawnienia. Aplikacja nie wykrywa ręcznego wklejenia i w tej ścieżce nie przywraca poprzedniej zawartości schowka.
 
@@ -44,31 +44,26 @@ WhisperKit pobiera z Hugging Face zasoby rozpoznawania, w tym wagi modelu, konfi
 
 ## Wskaźnik nagrywania i autostart
 
-Podczas nagrywania wskaźnik poziomu dźwięku pojawia się na dole ekranu. W menu **Wskaźnik nagrywania** są **Iskry** (domyślne), **Słupki** i **Nić światła**. Wybór zapisuje się i obowiązuje od następnego nagrania bez restartu.
+Wskaźnik poziomu dźwięku pojawia się na dole ekranu dopiero po otrzymaniu pierwszych próbek. Jeśli przez co najmniej cztery sekundy mikrofon nie dostarcza próbek, sesja kończy się komunikatem. Cisza z poprawnie przesyłanymi próbkami nie jest traktowana jako awaria. W menu **Wskaźnik nagrywania** są **Iskry** (domyślne), **Słupki** i **Nić światła**. Wybór zapisuje się i obowiązuje od następnego nagrania bez restartu.
 
 Menu zawiera opcję **Uruchamiaj przy logowaniu**. Jej działania po ponownym zalogowaniu na złożonej aplikacji nie sprawdzono. Uruchomienie przez `swift run` nie zastępuje testu autostartu aplikacji `.app`.
 
 ## Zgodność i stan sprawdzenia
 
-Manifest projektu deklaruje minimum **macOS 14**. Jest to deklaracja zgodności, nie wynik testu na macOS 14. Nie ustalono wersji macOS ani architektury, na których wykonano dotychczasowe uruchomienia. Działania na Macach z procesorem Intel nie sprawdzono. Gotowa aplikacja nie wymaga instalacji Swifta.
+Manifest projektu deklaruje minimum **macOS 14**. Jest to deklaracja zgodności, nie wynik testu na macOS 14. Naprawę 0.1.1 sprawdzono na macOS 27.0, arm64: testy rejestratora z mikrofonem wbudowanym i Philips TAT1500 oraz testy logiki i adapterów. Działania na Macach z procesorem Intel nie sprawdzono. Gotowa aplikacja nie wymaga instalacji Swifta.
 
 Testy automatyczne nie zastępują testów mikrofonu, klawiatur i interfejsu na urządzeniu.
 
 ## Podpis wydania
 
-Wydanie **0.1.0** (build 1) jest udostępniane jako `Gadula-0.1.0.dmg`, podpisany certyfikatem **Developer ID Application**. Apple zaakceptowało notaryzację obrazu dysku (zgłoszenie `754f53e4-f749-4b44-9d24-3500ea8ce030`), a bilet został zszyty z DMG. Aplikacja wewnątrz obrazu była notaryzowana osobno. `spctl --assess` zwraca **accepted** ze źródłem **Notarized Developer ID**.
-
-Po pobraniu możesz sprawdzić podpis DMG i porównać jego sumę z wartością podaną przy wydaniu. Po przeniesieniu aplikacji do folderu Aplikacje możesz też sprawdzić jej podpis i bilet:
+Status podpisu, notaryzacji i suma SHA-256 gotowego pliku są podane przy [wydaniu na GitHubie](https://github.com/arturwywijas/gadula/releases/latest). Po instalacji można sprawdzić aplikację:
 
 ```sh
-spctl --assess --type open --context context:primary-signature "$HOME/Downloads/Gadula-0.1.0.dmg"
-shasum -a 256 "$HOME/Downloads/Gadula-0.1.0.dmg"
 spctl --assess --type execute --verbose=4 "/Applications/Gaduła.app"
 xcrun stapler validate "/Applications/Gaduła.app"
-xcrun stapler validate "$HOME/Downloads/Gadula-0.1.0.dmg"
 ```
 
-Oczekiwana suma SHA-256 pliku `Gadula-0.1.0.dmg` to `e4aa6aa29d90b8f633589a6381b8766e41449917eee4d5bf95b84c030630cc79`. `spctl` i `shasum` są dostępne w każdym macOS. Polecenie `xcrun stapler validate` wymaga narzędzi deweloperskich Apple. Samodzielnie zbudowana kopia ze źródeł nie jest notaryzowana, dopóki ktoś nie przejdzie własnej notaryzacji.
+Kopia zbudowana ze źródeł nie jest automatycznie notaryzowana. Notaryzacja własnego wydania wymaga osobnej procedury opisanej w [BUILDING.md](BUILDING.md). Wersja 0.1.1 nie pozwala uruchomić równocześnie dwóch kopii w tym samym koncie macOS.
 
 ## Budowanie ze źródeł
 
@@ -76,7 +71,7 @@ Wymagania toolchainu oraz instrukcja budowy pliku wykonywalnego, testów, skład
 
 ## Testy ze źródeł
 
-Zestaw VoiceAgentCoreTests obejmuje **98 przypadków**. Osobny cel AudioTapGuardTests sprawdza ochronę instalacji tapu audio przed wyjątkiem Objective-C. Testy rdzenia używają atrap portów; nie sprawdzają rzeczywistego mikrofonu, klawiatury ani interfejsu na urządzeniu. Polecenia uruchomienia i zakres testów opisuje [docs/BUILDING.md](BUILDING.md).
+Zestaw VoiceAgentCoreTests obejmuje **100 przypadków**. Osobny cel AudioTapGuardTests sprawdza ochronę instalacji tapu audio przed wyjątkiem Objective-C. Dodatkowy zestaw testuje schowek, strukturę wag, blokadę instancji, kopiowanie audio i zdarzenia adaptera. Testy rdzenia używają atrap portów; nie sprawdzają rzeczywistego mikrofonu, klawiatury ani interfejsu na urządzeniu. Polecenia uruchomienia i zakres testów opisuje [docs/BUILDING.md](BUILDING.md).
 
 ## Licencje
 

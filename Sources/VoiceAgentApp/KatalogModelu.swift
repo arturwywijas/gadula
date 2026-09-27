@@ -108,14 +108,9 @@ final class KatalogModelu {
     }
 }
 
-enum WagiModeluNaDysku {
+extension WagiModeluNaDysku {
     static func saKompletne(dla wariant: WariantModelu) -> Bool {
-        guard let folder = WhisperKitTranscriber.folderNaDysku(dla: wariant.whisperKitID) else {
-            return false
-        }
-        guard let elementy = try? FileManager.default.contentsOfDirectory(atPath: folder) else {
-            return false
-        }
-        return elementy.contains { $0.hasSuffix(".mlmodelc") }
+        guard let folder = WhisperKitTranscriber.folderNaDysku(dla: wariant.whisperKitID) else { return false }
+        return saKompletne(folder: URL(fileURLWithPath: folder))
     }
 }

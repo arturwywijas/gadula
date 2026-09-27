@@ -25,11 +25,26 @@ swift run VoiceAgentCoreTests
 swift run AudioTapGuardTests
 ```
 
-`VoiceAgentCoreTests` to wykonywalny harness obejmujący 98 przypadków logiki rdzenia. `AudioTapGuardTests` sprawdza osłonę Objective-C, która zamienia wyjątek z instalacji tapu audio w kontrolowany wynik.
+`VoiceAgentCoreTests` to wykonywalny harness obejmujący 100 przypadków logiki rdzenia. `AudioTapGuardTests` sprawdza osłonę Objective-C, która zamienia wyjątek z instalacji tapu audio w kontrolowany wynik.
 
 `Tests/AudioReconfigurationTests/main.swift` nie jest celem pakietu SwiftPM. Plik deklaruje zastępcze typy aplikacji, potrzebne do testu adaptera audio, i nie można go dołączyć jako zwykłego celu bez konfliktu ze źródłami produkcyjnymi. Nie uruchamia się go poleceniem `swift run`.
 
-Te harnessy nie sprawdzają nagrywania przez rzeczywisty mikrofon, działania skrótów na fizycznej klawiaturze ani zachowania okien i menu na ekranie.
+Dodatkowe testy uruchamiane bez pobierania WhisperKit:
+
+```sh
+bash Tests/test-core.sh
+bash Tests/test-app-behavior.sh
+```
+
+Drugi skrypt uruchamia testy prawdziwego oddzielnego schowka, struktury cache, blokady instancji i kopii bufora oraz harness adaptera `AudioReconfigurationTests`. Nie zmienia schowka użytkownika ani jego modeli.
+
+Osobny, jawny test sprzętowy nagrywa przez sześć sekund z bieżącego domyślnego mikrofonu. Nie zapisuje ani nie transkrybuje dźwięku. Argument oznacza liczbę sesji na tym samym rejestratorze (1–10). Proces musi już mieć zgodę na mikrofon; jej brak daje kod 2, a błąd nagrania kod 1.
+
+```sh
+bash Tests/test-microphone.sh 3
+```
+
+Testy automatyczne nie sprawdzają fizycznej klawiatury ani działania wszystkich programów docelowych.
 
 ## Logi systemowe
 

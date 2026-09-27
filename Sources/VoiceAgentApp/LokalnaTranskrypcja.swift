@@ -13,7 +13,15 @@ final class LokalnaTranskrypcja: Transcribing {
 
     func modelGotowy() async -> Bool {
         let wariant = wybranyWariant
-        return WagiModeluNaDysku.saKompletne(dla: wariant)
+        guard WagiModeluNaDysku.saKompletne(dla: wariant) else { return false }
+        // Uszkodzone wagi wykrywamy przed przejęciem mikrofonu, nie po wypowiedzi.
+        let gotowy = await przygotowanie.poczekajNaModel(
+            modelID: wariant.whisperKitID, wagiNaDysku: true,
+            wykonaj: { [weak self] modelID in
+                guard let self else { return false }
+                return await self.wczytaj(modelID: modelID)
+            })
+        return gotowy && wybranyWariant == wariant
     }
 
     var stanPrzygotowaniaModelu: StanPrzygotowaniaModelu { przygotowanie.stan }

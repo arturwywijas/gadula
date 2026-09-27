@@ -24,11 +24,18 @@ final class MikrofonAudioCapturing: AudioCapturing {
             wskaznik?.przyjmij(szczyt: szczyt, czas: czas)
         }
         recorder.onZatrzymanie = { [weak wskaznik] in wskaznik?.zakoncz() }
+        recorder.onPierwszeProbki = { [weak wskaznik] in wskaznik?.rozpocznij() }
+        recorder.onBrakDzwieku = { [weak self] in
+            self?.przerwijNagrywanie(komunikat: "Mikrofon nie dostarcza dźwięku. Sprawdź połączenie lub wybierz inne wejście w menu Mikrofon.")
+        }
         recorder.onLimitCzasu = { [weak self] samples in
             guard let self else { return }
             self.autoStopNagranie = Self.nagranie(z: samples)
-            let k = self.koordynator
-            Task { await k?.zakonczNagrywanie() }
+            let id = self.generacjaStartu
+            Task { [weak self] in
+                guard let self, self.generacjaStartu == id else { return }
+                await self.koordynator?.zakonczNagrywanie()
+            }
         }
         recorder.onZmianaKonfiguracji = { [weak self] czas in
             self?.obsluzZmianeKonfiguracji(czasZdarzenia: czas)
@@ -59,7 +66,6 @@ final class MikrofonAudioCapturing: AudioCapturing {
                 try self.recorder.start()
                 let poziom = AudioDeviceManager.inputVolumeDecibels(for: recorder.uzywaneUrzadzenieID)
                 koordynator?.odnotujPoziomWejscia(db: poziom)
-                self.wskaznik.rozpocznij()
             } catch {
                 self.wskaznik.zakoncz()
                 throw error
@@ -105,26 +111,28 @@ final class MikrofonAudioCapturing: AudioCapturing {
             AppLogger(category: "Audio").notice("FN18 configuration action=ignore reason=ownRebuildOrSettling")
         case .limitProb:
             AppLogger(category: "Audio").error("FN18 audio stop reason=reconfigurationLimit")
-            _ = recorder.stop()
-            autoStopNagranie = nil
-            let k = koordynator
-            Task { await k?.przerwij(komunikat: "Mikrofon nie ustabilizował się po dwóch próbach. Wybierz inne wejście i spróbuj ponownie.") }
+            przerwijNagrywanie(komunikat: "Mikrofon nie ustabilizował się po dwóch próbach. Wybierz inne wejście i spróbuj ponownie.")
         case .przeladuj:
             do {
                 try recorder.przeladujPoZmianieKonfiguracji()
             } catch {
                 AppLogger(category: "Audio").error("FN15 audio stop reason=reconfigurationFailed")
-                _ = recorder.stop()
-                autoStopNagranie = nil
-                let k = koordynator
-                Task { await k?.przerwij(komunikat: "Nie udało się wznowić mikrofonu po zmianie formatu.") }
+                przerwijNagrywanie(komunikat: "Nie udało się wznowić mikrofonu po zmianie formatu.")
             }
         case .odlaczone:
             AppLogger(category: "Audio").notice("FN15 audio stop reason=usedDeviceDisconnected")
-            _ = recorder.stop()
-            autoStopNagranie = nil
-            let k = koordynator
-            Task { await k?.przerwij(komunikat: "Mikrofon został odłączony.") }
+            przerwijNagrywanie(komunikat: "Mikrofon został odłączony.")
+        }
+    }
+
+    @MainActor
+    private func przerwijNagrywanie(komunikat: String) {
+        _ = recorder.stop()
+        autoStopNagranie = nil
+        let id = generacjaStartu
+        Task { [weak self] in
+            guard let self, self.generacjaStartu == id else { return }
+            await self.koordynator?.przerwij(komunikat: komunikat)
         }
     }
 

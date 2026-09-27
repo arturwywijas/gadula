@@ -179,7 +179,8 @@ await runTests([
         await koordynator.handleWyzwalacz()
         await koordynator.handleWyzwalacz()
         try expectEqual(koordynator.ostatniWynikWstawienia, .nieudane)
-        try expectEqual(koordynator.ostatniKomunikat, nil as String?)
+        try expectEqual(koordynator.ostatniKomunikat, "Nie udało się zachować tekstu w schowku.")
+        try expectEqual(koordynator.stanIkony, .blad)
         try expectEqual(inserting.wstawienia, ["test"])
     }),
     ("magazyn: puste źródło daje wartości domyślne", {

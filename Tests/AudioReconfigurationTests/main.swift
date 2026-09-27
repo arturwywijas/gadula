@@ -1,3 +1,4 @@
+// autor: Codex, aktualizacja gadula-stabilnosc-20260927
 // Testuje produkcyjny MikrofonAudioCapturing bez silnika, mikrofonu i okien.
 import Foundation
 import VoiceAgentCore
@@ -33,6 +34,7 @@ enum AudioDeviceManager {
     static func defaultInputDeviceID() -> UInt32? { 1 }
     static func deviceID(forUID: String) -> UInt32? { 1 }
     static func name(for: UInt32) -> String? { "syntetyczny" }
+    static func inputVolumeDecibels(for: UInt32?) -> Float? { nil }
 }
 enum PotwierdzenieWejsciaAudio {
     static func ustaw(_ id: UInt32) async -> PotwierdzenieZmianyAudio.Wynik { .kontynuuj(urzadzenie: id, powod: .hal) }
@@ -46,6 +48,9 @@ final class AudioRecorder {
     var state: State = .idle
     var onPoziom: ((Float, Double) -> Void)?
     var onZatrzymanie: (() -> Void)?
+    var onPierwszeProbki: (() -> Void)?
+    var onBrakDzwieku: (() -> Void)?
+    var uzywaneUrzadzenieID: UInt32? { 1 }
     var onLimitCzasu: (([Float]) -> Void)?
     var onZmianaKonfiguracji: ((Double) -> Void)?
     var ochrona = OchronaRekonfiguracjiAudio()
@@ -94,6 +99,8 @@ struct Proba {
         audio.podlacz(koordynator: k)
         await k.handleWyzwalacz()
         let recorder = AudioRecorder.ostatni!
+        assert(wskaznik.pokazania == 0, "Wskaźnik czeka na prawdziwe próbki")
+        recorder.onPierwszeProbki?()
         recorder.onZmianaKonfiguracji?(0.6)
         assert(recorder.przeladowania == 0)
         recorder.onZmianaKonfiguracji?(2)
@@ -106,6 +113,21 @@ struct Proba {
         assert(recorder.state == .idle && k.stan == .bezczynny)
         assert(k.ostatniKomunikat?.contains("dwóch próbach") == true)
         assert(wskaznik.pokazania == 1 && wskaznik.ukrycia == 1)
+        await k.handleWyzwalacz()
+        recorder.onBrakDzwieku?()
+        for _ in 0..<100 where k.stan != .bezczynny { await Task.yield() }
+        assert(k.stan == .bezczynny)
+        assert(k.ostatniKomunikat?.contains("nie dostarcza dźwięku") == true)
+        print("PASS adapter: brak PCM przerywa sesję z komunikatem")
+        await k.handleWyzwalacz()
+        _ = recorder.stop()
+        recorder.onLimitCzasu?([Float](repeating: 0, count: 16000))
+        await k.anuluj()
+        await k.handleWyzwalacz()
+        for _ in 0..<100 { await Task.yield() }
+        assert(k.stan == .nagrywanie, "Stary limit nie może zakończyć kolejnej sesji")
+        await k.anuluj()
+        print("PASS adapter: spóźniony limit poprzedniej sesji nie zatrzymuje nowej")
         print("PASS adapter: wlasne zdarzenie ignorowane, dwa reload bez migania, limit zatrzymuje z komunikatem")
     }
 }

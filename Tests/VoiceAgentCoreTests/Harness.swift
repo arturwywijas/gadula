@@ -24,7 +24,7 @@ func expectEqual<T: Equatable>(
 
 @MainActor
 func runTests(_ cases: [(String, @MainActor () async throws -> Void)]) async {
-    let all = TestyNormalizacjiNagrania.przypadki() + TestyStabilnosciSesji.przypadki() + TestyKonfiguracjiAudio.przypadki() + TestyStyluWskaznika.przypadki() + TestyPrzygotowaniaModelu.przypadki() + cases + TestySkrotuWyzwalacza.przypadki() + TestyPigulkiNagrywania.przypadki()
+    let all = TestyNadzoruDzwieku.przypadki() + TestyNormalizacjiNagrania.przypadki() + TestyStabilnosciSesji.przypadki() + TestyKonfiguracjiAudio.przypadki() + TestyStyluWskaznika.przypadki() + TestyPrzygotowaniaModelu.przypadki() + cases + TestySkrotuWyzwalacza.przypadki() + TestyPigulkiNagrywania.przypadki()
     var failed = 0
     for (name, body) in all {
         do {

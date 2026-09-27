@@ -33,12 +33,17 @@ final class AudioRecorder {
     var onLimitCzasu: (([Float]) -> Void)?
     var onPoziom: ((Float, Double) -> Void)?
     var onZatrzymanie: (() -> Void)?
+    var onPierwszeProbki: (() -> Void)?
+    var onBrakDzwieku: (() -> Void)?
     var onZmianaKonfiguracji: ((Double) -> Void)?
     nonisolated(unsafe) private var obserwatorKonfiguracji: NSObjectProtocol?
     private var formatTapu: AVAudioFormat?
     private var formatPoStarcie: AVAudioFormat?
     private var ochronaRekonfiguracji = OchronaRekonfiguracjiAudio()
     private let stabilizacja = LimitCzasuNagrania()
+    private let kontrolaDzwieku = LimitCzasuNagrania()
+    private var nadzorDzwieku = NadzorDzwieku()
+    private var pokazanoOdbiorDzwieku = false
     private var generacjaTapu: UInt64 = 0
 
     enum BladKonfiguracji: Error { case niezgodnyFormat, instalacjaTapu }
@@ -210,6 +215,9 @@ final class AudioRecorder {
         }
 
         state = .recording
+        pokazanoOdbiorDzwieku = false
+        nadzorDzwieku.rozpocznij(czas: ProcessInfo.processInfo.systemUptime)
+        sprawdzDostarczanieDzwieku()
         limitCzasu.rozpocznij(po: .seconds(Self.maxDurationSeconds)) { [weak self] in
             guard let self, self.state == .recording else { return }
             Self.log.notice("FN15 audio stop reason=timeLimit")
@@ -272,25 +280,20 @@ final class AudioRecorder {
             tapCallbacks = 0
         }
 
-        // nil dziedziczy format wyjścia węzła. Najpierw porównujemy go z jego
-        // aktualnym wejściem sprzętowym; catch nie przechwytuje wyjątków Objective-C.
-        // Po stop() format węzła może być przejściowy. Nie porównujemy go ze starym tapem.
+        // Po zmianie profilu Bluetooth silnik zatrzymuje się, ale wyjście węzła
+        // zachowuje stary format. Przeformatowujemy tap do bieżącego wejścia.
+        // Odbudowa całego silnika w tym miejscu ponawiała negocjację 44,1 -> 16 kHz.
         Self.log.notice("FN18 tap preflight installedTap=\(Self.opisz(formatTapu)) nodeOutput=\(Self.opisz(engine.inputNode.outputFormat(forBus: 0))) hardwareInput=\(Self.opisz(engine.inputNode.inputFormat(forBus: 0)))")
-        if !zgodnyZeSprzetem(engine.inputNode.outputFormat(forBus: 0), node: engine.inputNode) {
-            Self.log.notice("FN15 engine rebuild reason=formatChanged")
-            odbudujSilnik()
-        }
         let node = engine.inputNode
-        let kandydat = node.outputFormat(forBus: 0)
-        guard zgodnyZeSprzetem(kandydat, node: node),
-              kandydat.isEqual(node.outputFormat(forBus: 0)) else {
+        let kandydat = node.inputFormat(forBus: 0)
+        guard zgodnyZeSprzetem(kandydat, node: node) else {
             engineNeedsRebuild = true
             Self.log.error("FN15 tap not installed reason=unstableOrInvalidFormat")
             throw BladKonfiguracji.niezgodnyFormat
         }
         formatTapu = kandydat
         do {
-            try Self.zainstalujTap(node: node, format: nil, relay: tapRelay, generacja: generacjaTapu)
+            try Self.zainstalujTap(node: node, format: kandydat, relay: tapRelay, generacja: generacjaTapu)
         } catch {
             engineNeedsRebuild = true
             // Po NSException nie używamy ponownie częściowo skonfigurowanego silnika.
@@ -316,6 +319,8 @@ final class AudioRecorder {
     func stop() -> [Float] {
         limitCzasu.anuluj()
         stabilizacja.anuluj()
+        kontrolaDzwieku.anuluj()
+        nadzorDzwieku.zakoncz()
         ochronaRekonfiguracji = OchronaRekonfiguracjiAudio()
         guard state == .recording else { return [] }
         state = .idle
@@ -366,9 +371,10 @@ final class AudioRecorder {
 
     private nonisolated func processTap(buffer: AVAudioPCMBuffer, generacja: UInt64) {
         let czasBufora = ProcessInfo.processInfo.systemUptime
+        guard let kopia = skopiujBuforAudio(buffer) else { return }
         Task { @MainActor [weak self] in
             guard let self, self.generacjaTapu == generacja else { return }
-            self.consume(buffer: buffer, czasBufora: czasBufora)
+            self.consume(buffer: kopia, czasBufora: czasBufora)
         }
     }
 
@@ -441,7 +447,26 @@ final class AudioRecorder {
         ingest(channel, count: Int(outBuffer.frameLength))
     }
 
+    private func sprawdzDostarczanieDzwieku() {
+        kontrolaDzwieku.rozpocznij(po: .seconds(1)) { [weak self] in
+            guard let self, self.state == .recording else { return }
+            if self.nadzorDzwieku.brakDanych(czas: ProcessInfo.processInfo.systemUptime) {
+                Self.log.error("audio stop reason=noPCM timeoutSeconds=\(NadzorDzwieku.limitBezDanych)")
+                _ = self.stop()
+                self.onBrakDzwieku?()
+            } else {
+                self.sprawdzDostarczanieDzwieku()
+            }
+        }
+    }
+
     private func ingest(_ data: UnsafePointer<Float>, count: Int) {
+        guard count > 0 else { return }
+        nadzorDzwieku.otrzymano(liczbaProbek: count, czas: ProcessInfo.processInfo.systemUptime)
+        if !pokazanoOdbiorDzwieku {
+            pokazanoOdbiorDzwieku = true
+            onPierwszeProbki?()
+        }
         for i in 0..<count { samples.append(data[i]) }
     }
 

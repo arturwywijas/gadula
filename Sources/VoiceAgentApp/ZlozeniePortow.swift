@@ -46,58 +46,6 @@ final class MacPermissionChecking: PermissionChecking {
     }
 }
 
-final class SchowekTextInserting: TextInserting {
-    private static let log = AppLogger(category: "TextInsert")
-
-    func insert(tekst: String) async -> WynikWstawienia {
-        let started = ContinuousClock.now
-        let checkerGranted = await MainActor.run { PermissionsChecker.isAccessibilityGranted }
-        Self.log.notice("insert begin adapter=SchowekTextInserting accessibilityChecker=\(checkerGranted) characters=\(tekst.count)")
-        if !AXIsProcessTrusted() {
-            let prompt = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-            _ = AXIsProcessTrustedWithOptions(prompt)
-        }
-
-        let board = NSPasteboard.general
-        let previous = board.string(forType: .string)
-        board.clearContents()
-        board.setString(tekst, forType: .string)
-
-        let trusted = AXIsProcessTrusted()
-        Self.log.notice("insert permission trusted=\(trusted)")
-        guard trusted else {
-            Self.log.notice("insert outcome=tylkoSchowek reason=missingAccessibilityPermission commandV=false restore=false")
-            return .tylkoSchowek
-        }
-
-        let insertedChangeCount = board.changeCount
-        postCommandV()
-        Self.log.notice("insert commandV dispatchAttempted elapsed=\(started.duration(to: .now)) clipboardChangeCount=\(insertedChangeCount)")
-        try? await Task.sleep(nanoseconds: 400_000_000)
-
-        Self.log.notice("insert restore elapsed=\(started.duration(to: .now)) clipboardUnchanged=\(board.changeCount == insertedChangeCount)")
-        board.clearContents()
-        if let previous {
-            board.setString(previous, forType: .string)
-        }
-        // Wyslanie Cmd-V nie potwierdza odczytu schowka przez aplikacje docelowa.
-        Self.log.notice("insert outcome=wstawione targetReadConfirmed=false")
-        return .wstawione
-    }
-
-    private func postCommandV() {
-        let v: CGKeyCode = 9
-        func post(down: Bool) {
-            let event = CGEvent(keyboardEventSource: nil, virtualKey: v, keyDown: down)
-            Self.log.notice("insert keyEvent down=\(down) created=\(event != nil)")
-            event?.flags = .maskCommand
-            event?.post(tap: .cghidEventTap)
-        }
-        post(down: true)
-        post(down: false)
-    }
-}
-
 @MainActor
 final class TranskrypcjaZDziennikiem: Transcribing {
     private let wewnetrzna: LokalnaTranskrypcja
