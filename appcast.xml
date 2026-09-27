@@ -1,0 +1,19 @@
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Gaduła</title>
+        <item>
+            <title>0.3.0</title>
+            <pubDate>Sun, 27 Sep 2026 20:17:26 +0200</pubDate>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://github.com/arturwywijas/gadula/releases/download/v0.3.0/Gadula-0.3.0.zip" length="2478213" type="application/octet-stream" sparkle:edSignature="LD208E6guTIyvyCGqFb/aNTBxGzGuFGEf0LVSkmUOSILMkAsinkiGzkYCvFgbhEricFEZrOk15sTEUvgo5DPAg=="></enclosure>
+        </item>
+    </channel>
+</rss><!-- sparkle-signatures:
+edSignature: Kx8AkW2wqq3wEuar5jkVh9oRPPLM6XufwXWDfhYQtR/OuMQO7l1TIETZXDeTkyFIRJ+3iTY/hmZ10DlautoTBA==
+length: 1119
+-->
