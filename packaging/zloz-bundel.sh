@@ -117,7 +117,28 @@ for zasob in "$PRODUKTY"/*.bundle; do
   echo "zasoby: ${zasob:t}"
 done
 
+# Sparkle jest biblioteką dynamiczną. Kopia zachowuje symlinki frameworka.
+SPARKLE="$KATALOG_BUDOWY/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
+[[ -d "$SPARKLE" ]] || blad "Brak frameworka Sparkle po rozwiązaniu zależności."
+mkdir -p "$APP/Contents/Frameworks"
+ditto "$SPARKLE" "$APP/Contents/Frameworks/Sparkle.framework"
+# SPM dodaje rpath dla narzędzia CLI; bundel potrzebuje własnego Frameworks.
+install_name_tool -add_rpath '@executable_path/../Frameworks' "$BINARNY"
+
 echo "== 3. Podpis =="
+# Podpis od środka na zewnątrz, z zachowaniem wymaganych uprawnień pomocników.
+PODPIS="${IDENTYFIKATOR_TOZSAMOSCI:--}"
+OPCJE_PODPISU=(--timestamp=none)
+if [[ "$TRYB_PODPISU" == developer-id ]]; then OPCJE_PODPISU=(--options runtime --timestamp); fi
+FRAMEWORK="$APP/Contents/Frameworks/Sparkle.framework"
+for czesc in "$FRAMEWORK/Versions/B/XPCServices/Downloader.xpc" \
+             "$FRAMEWORK/Versions/B/XPCServices/Installer.xpc" \
+             "$FRAMEWORK/Versions/B/Autoupdate" \
+             "$FRAMEWORK/Versions/B/Updater.app" \
+             "$FRAMEWORK"; do
+  codesign --force --sign "$PODPIS" "${OPCJE_PODPISU[@]}" --preserve-metadata=entitlements "$czesc"
+done
+
 case "$TRYB_PODPISU" in
   adhoc)
     codesign --force --sign - --timestamp=none "$APP"

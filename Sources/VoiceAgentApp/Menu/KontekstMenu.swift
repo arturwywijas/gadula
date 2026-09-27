@@ -36,6 +36,8 @@ struct KontekstMenu {
     let surowyTranskrypt: () -> String?
     let dyktuj: () -> Void
     let zakoncz: () -> Void
+    let dzwiek: DzwiekPodczasDyktowania
+    let aktualizacje: Aktualizacje
 
     func podepnij(_ item: NSMenuItem, _ wykonaj: @escaping () -> Void) {
         item.action = #selector(CelAkcjiMenu.wykonajZPozycji(_:))

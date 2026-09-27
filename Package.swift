@@ -12,6 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", from: "1.0.0"),
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
     ],
     targets: [
         .target(name: "VoiceAgentCore"),
@@ -24,6 +25,7 @@ let package = Package(
                 "AudioTapGuard",
                 "GadulaArtwork",
                 .product(name: "WhisperKit", package: "argmax-oss-swift"),
+                .product(name: "Sparkle", package: "Sparkle"),
             ],
             resources: [
                 .process("THIRD-PARTY-NOTICES.md"),

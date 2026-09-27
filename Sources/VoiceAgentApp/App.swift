@@ -7,11 +7,14 @@ import VoiceAgentCore
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let log = AppLogger(category: "Skrot")
     private var statusItem: NSStatusItem?
+    private let aktualizacje = Aktualizacje()
+    private let dzwiek = DzwiekPodczasDyktowania()
     private let hotkeys = HotkeyManager()
     private let koordynator: KoordynatorDyktowania
     private let magazyn: MagazynUstawien
     private let transkrypcja: TranskrypcjaZDziennikiem
     private let celAkcji = CelAkcjiMenu()
+    private var zamyka = false
     private var busy = false
     private var oczekujePuszczenia = false
     private var zadanieBledu: Task<Void, Never>?
@@ -25,7 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let transkrypcja = TranskrypcjaZDziennikiem(magazyn: magazyn)
         self.magazyn = magazyn
         self.transkrypcja = transkrypcja
-        koordynator = ZlozeniePortow.koordynator(magazyn: magazyn, transkrypcja: transkrypcja)
+        koordynator = ZlozeniePortow.koordynator(magazyn: magazyn, transkrypcja: transkrypcja, dzwiek: dzwiek)
         super.init()
         transkrypcja.poZmianiePrzygotowaniaModelu = { [weak self] in
             Task { @MainActor in self?.refreshStatus() }
@@ -37,6 +40,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         koordynator.poZakonczeniuSesji = { [weak self] in
             Task { @MainActor in self?.refreshStatus() }
         }
+        aktualizacje.trwaDyktowanie = { [weak self] in
+            guard let self else { return false }
+            return self.busy || self.koordynator.stan != .bezczynny
+        }
+        aktualizacje.poZmianie = { [weak self] in self?.refreshStatus() }
+        aktualizacje.uruchom()
         installStatusItem()
         podlaczWyzwalacz()
         podlaczEscape()
@@ -44,13 +53,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        dzwiek.zakoncz()
         hotkeys.stop()
         zadanieKomunikatuBusy?.cancel()
         if let escGlobal { NSEvent.removeMonitor(escGlobal) }
         if let escLokalny { NSEvent.removeMonitor(escLokalny) }
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard busy || koordynator.stan != .bezczynny else { return .terminateNow }
+        if !zamyka {
+            zamyka = true
+            Task { @MainActor [weak self] in
+                while let self, self.busy || self.koordynator.stan != .bezczynny {
+                    try? await Task.sleep(for: .milliseconds(100))
+                }
+                NSApp.reply(toApplicationShouldTerminate: true)
+            }
+        }
+        return .terminateLater
+    }
+
     private func toggleSesji() {
+        guard !zamyka || koordynator.stan == .nagrywanie else { return }
         Self.log.notice("FN09 coordinator trigger busy=\(self.busy) state=\(String(describing: self.koordynator.stan)) decision=\(self.busy ? "rejectBusy" : (self.koordynator.stan == .transkrypcja || self.koordynator.stan == .wstawianie ? "ignoreState" : "accept"))")
         guard !busy else {
             pokazKomunikatZajetosci()
@@ -158,7 +183,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             moznaZmienicModel: koordynator.stan == .bezczynny && (koordynator.gotowosc == .ukryta || koordynator.gotowosc == .blad),
             surowyTranskrypt: { [weak self] in self?.koordynator.ostatniSurowyTranskrypt },
             dyktuj: { [weak self] in self?.toggleSesji() },
-            zakoncz: { NSApp.terminate(nil) }
+            zakoncz: { NSApp.terminate(nil) },
+            dzwiek: dzwiek,
+            aktualizacje: aktualizacje
         )
         statusItem?.menu = MenuPaska.zbuduj(kontekst: kontekst)
         odswiezIkone()
@@ -206,7 +233,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.button?.image = IkonaGaduly.obrazPaska(stan: stanIkony)
         statusItem?.button?.setAccessibilityLabel(opis)
         statusItem?.button?.toolTip = opis
-        statusItem?.button?.title = komunikatBusy == nil ? "" : " Zajęta"
+        statusItem?.button?.title = komunikatBusy == nil ? (aktualizacje.dostepnaWersja == nil ? "" : " ↑") : " Zajęta"
         statusItem?.button?.appearsDisabled = koordynator.stanIkony == .przetwarza
     }
 

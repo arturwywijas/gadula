@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/arturwywijas/gadula/releases/latest"><b>Pobierz Gadułę 0.2.0</b></a>
+  <a href="https://github.com/arturwywijas/gadula/releases/latest"><b>Pobierz Gadułę 0.3.0</b></a>
   &nbsp;·&nbsp; macOS 14 lub nowszy &nbsp;·&nbsp; Apple Silicon &nbsp;·&nbsp; licencja MIT
 </p>
 
@@ -24,17 +24,21 @@ Gaduła to mała, darmowa aplikacja w pasku menu Maca do dyktowania po polsku. W
 
 ## Instalacja
 
-1. Pobierz `Gadula-0.2.0.dmg` z [najnowszego wydania](https://github.com/arturwywijas/gadula/releases/latest).
+1. Pobierz `Gadula-0.3.0.dmg` z [najnowszego wydania](https://github.com/arturwywijas/gadula/releases/latest).
 2. Otwórz obraz dysku, przeciągnij **Gaduła.app** do folderu **Aplikacje**, a potem wysuń obraz.
 3. Uruchom Gadułę. Ikona pojawi się w pasku menu, a model rozpoznawania mowy pobierze się w tle. Postęp widać w menu **Model**.
 4. Przy pierwszym nagraniu zezwól na użycie mikrofonu. Żeby tekst wklejał się sam, włącz Gadułę w **Ustawieniach systemowych → Prywatność i ochrona → Dostępność**.
 5. Kliknij w pole tekstowe, wciśnij **Option+Space**, poczekaj na zielone **Możesz mówić**, podyktuj tekst i wciśnij skrót jeszcze raz.
 
+Ściszanie dźwięku na czas dyktowania jest domyślnie włączone; możesz je wyłączyć w menu. Po nagraniu Gaduła przywraca poprzednią głośność i zwalnia mikrofon, aby słuchawki Bluetooth mogły wrócić do normalnego odtwarzania. Ręczne zmiany głośności mają pierwszeństwo.
+
 ## Prywatność
 
 Gaduła nie ma kont ani telemetrii. Mowę rozpoznaje lokalnie, a w kodzie nie ma ścieżki, którą nagrany dźwięk mógłby trafić do usługi rozpoznawania mowy.
 
-Internet jest potrzebny na start: model, tokenizer i konfiguracja pobierają się z Hugging Face przy pierwszym użyciu, przy zmianie modelu albo ponownym pobieraniu. Praca bez sieci wymaga wcześniej pobranych wszystkich tych zasobów. Pełnego ruchu sieciowego aplikacji nie mierzyłem.
+Domyślnie Gaduła sprawdza też aktualizacje na GitHubie, pobiera je w tle i instaluje przy zamknięciu. Możesz wyłączyć tę funkcję w menu „Aktualizuj automatycznie”. Informacja o nowej wersji pojawia się przy ikonie i w menu. Przejście z 0.2.0 wymaga jeszcze jednorazowej instalacji DMG. [Szczegóły aktualizacji i dźwięku](docs/DZWIEK-I-AKTUALIZACJE-0.3.0.md).
+
+Internet jest potrzebny również do pobrania modeli: model, tokenizer i konfiguracja pobierają się z Hugging Face przy pierwszym użyciu, przy zmianie modelu albo ponownym pobieraniu. Praca bez sieci wymaga wcześniej pobranych wszystkich tych zasobów. Pełnego ruchu sieciowego aplikacji nie mierzyłem.
 
 ## O co zapyta Mac
 
@@ -58,8 +62,8 @@ Wybór mikrofonu w menu Gaduły zmienia domyślne wejście dźwięku dla całego
 Status podpisu Developer ID, notaryzacji Apple oraz plik z sumą SHA-256 znajdziesz przy [najnowszym wydaniu](https://github.com/arturwywijas/gadula/releases/latest). Suma dotyczy konkretnego pliku DMG.
 
 ```sh
-shasum -a 256 ~/Downloads/Gadula-0.2.0.dmg
-spctl --assess --type open --context context:primary-signature ~/Downloads/Gadula-0.2.0.dmg
+shasum -a 256 ~/Downloads/Gadula-0.3.0.dmg
+spctl --assess --type open --context context:primary-signature ~/Downloads/Gadula-0.3.0.dmg
 ```
 
 ## Dokumentacja
@@ -69,6 +73,6 @@ spctl --assess --type open --context context:primary-signature ~/Downloads/Gadul
 
 ## Licencja
 
-Kod Gaduły jest dostępny na licencji [MIT](LICENSE), Copyright (c) 2026 Artur Wywijas. [Noty oprogramowania osób trzecich](THIRD-PARTY-NOTICES.md) obejmują dictly, WhisperKit i swift-transformers; znajdziesz je też w aplikacji: **O aplikacji → Licencje**.
+Kod Gaduły jest dostępny na licencji [MIT](LICENSE), Copyright (c) 2026 Artur Wywijas. [Noty oprogramowania osób trzecich](THIRD-PARTY-NOTICES.md) obejmują dictly, WhisperKit, swift-transformers i Sparkle; znajdziesz je też w aplikacji: **O aplikacji → Licencje**.
 
 Autor: [Artur Wywijas](https://arturwywijas.pl)

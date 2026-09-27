@@ -90,7 +90,7 @@ final class TranskrypcjaZDziennikiem: Transcribing {
 
 enum ZlozeniePortow {
     @MainActor
-    static func koordynator(magazyn: MagazynUstawien, transkrypcja: TranskrypcjaZDziennikiem) -> KoordynatorDyktowania {
+    static func koordynator(magazyn: MagazynUstawien, transkrypcja: TranskrypcjaZDziennikiem, dzwiek: DzwiekPodczasDyktowania) -> KoordynatorDyktowania {
         let wskaznik = PigulkaNagrywania(magazyn: magazyn)
         let audio = MikrofonAudioCapturing(magazyn: magazyn, wskaznik: wskaznik)
         let id = magazyn.string(klucz: KluczModelu.id, domyslna: KluczModelu.domyslny)
@@ -101,7 +101,10 @@ enum ZlozeniePortow {
             inserting: SchowekTextInserting(),
             permissions: MacPermissionChecking()
         )
-        k.poZmianieGotowosci = { [weak wskaznik] stan in wskaznik?.ustawGotowosc(stan) }
+        k.poZmianieGotowosci = { [weak wskaznik, weak dzwiek] stan in
+            wskaznik?.ustawGotowosc(stan)
+            dzwiek?.ustawGotowosc(stan)
+        }
         audio.podlacz(koordynator: k)
         return k
     }

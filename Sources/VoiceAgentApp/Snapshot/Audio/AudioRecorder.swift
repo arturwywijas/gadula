@@ -13,15 +13,9 @@ import AudioTapGuard
 /// recording is actively in progress — which is what the user expects from a privacy
 /// standpoint.
 ///
-/// **Trade-off for Bluetooth mics / AirPods.** Known terrain, do not "fix" by rebinding AUHAL:
-/// - SCO voice-profile handshake: 200-400 ms of silence after `engine.start()`.
-///   Whisper tolerates a brief pre-speech silence; the first ~300 ms of speech may
-///   still be missed if the user talks the instant they press the hotkey on a cold engine.
-/// - Recreating the engine per take causes StartIO err 35 ("there already is a thread")
-///   on proxied devices (AirPods / Continuity / virtual mics).
-/// - Format error -10868 during route transition (BT handshake); retry once after 250 ms.
-/// - Manual AUHAL uninit→set→init fails to re-engage AirPods after the first use.
-/// Hold the hotkey a beat before speaking on Bluetooth, or use the built-in mic for snap taps.
+/// Silnik istnieje tylko podczas sesji. Samo stop/removeTap pozostawia AUHAL
+/// i profil rozmowy Bluetooth, dlatego po stop zwalniamy także silnik i obserwator.
+/// Podczas zmiany formatu wewnątrz nagrania zachowujemy silnik oraz zebrane PCM.
 @MainActor
 final class AudioRecorder {
 
@@ -67,6 +61,7 @@ final class AudioRecorder {
     }
 
     func ocenZmianeKonfiguracji(czasZdarzenia: Double) -> OchronaRekonfiguracjiAudio.Decyzja {
+        guard state == .recording, silnik != nil else { return .bezZmiany }
         let decyzja = ochronaRekonfiguracji.ocen(czasZdarzenia: czasZdarzenia,
             nagrywa: state == .recording, istnieje: uzywaneUrzadzenieIstnieje,
             wymaga: wymagaPrzeladowania)
@@ -109,14 +104,32 @@ final class AudioRecorder {
         ) { [weak self] _ in
             let czasZdarzenia = ProcessInfo.processInfo.systemUptime
             Task { @MainActor [weak self] in
-                guard let self, ObjectIdentifier(self.engine) == id else { return }
+                guard let self, let silnik = self.silnik, ObjectIdentifier(silnik) == id else { return }
                 self.onZmianaKonfiguracji?(czasZdarzenia)
             }
         }
     }
 
+    private func zwolnijSilnik() {
+        if let obserwatorKonfiguracji {
+            NotificationCenter.default.removeObserver(obserwatorKonfiguracji)
+            self.obserwatorKonfiguracji = nil
+        }
+        if let silnik {
+            if formatTapu != nil { silnik.inputNode.removeTap(onBus: 0) }
+            silnik.stop()
+            silnik.reset()
+        }
+        silnik = nil
+        converter = nil
+        sourceFormat = nil
+        formatTapu = nil
+        formatPoStarcie = nil
+    }
+
     private func odbudujSilnik() {
-        engine = AVAudioEngine()
+        zwolnijSilnik()
+        silnik = AVAudioEngine()
         formatTapu = nil
         formatPoStarcie = nil
         obserwujSilnik()
@@ -131,30 +144,25 @@ final class AudioRecorder {
         return zgodny
     }
 
-    /// Hard cap to protect memory and stay under Whisper's 30-second window.
+    /// Two-minute recording cap to bound memory; recognition handles shorter windows.
     static let maxDurationSeconds: TimeInterval = ProgiSesji.maksymalnyCzasTrwania
 
     enum State { case idle, recording }
     private(set) var state: State = .idle
 
-    /// A single long-lived engine, reused across recordings. It follows the system
-    /// default input; we recreate it when that device or its format changes (see
-    /// `bringUpEngine`) — and must not recreate per recording: that spins up a
-    /// second AUHAL unit on the same device while the previous one's IO thread is
-    /// still alive, which fails the next start with "there already is a thread" on
-    /// proxied devices (Bluetooth / Continuity / virtual mics).
-    private var engine = AVAudioEngine()
+    private var silnik: AVAudioEngine?
+    // Odczyt nie może tworzyć silnika: po stop nic nie może ponownie otworzyć AUHAL.
+    private var engine: AVAudioEngine {
+        precondition(silnik != nil, "Silnik dostępny tylko podczas sesji")
+        return silnik!
+    }
     private var converter: AVAudioConverter?
     private var sourceFormat: AVAudioFormat?
     private var samples: [Float] = []
     private let limitCzasu = LimitCzasuNagrania()
     private var tapCallbacks: Int = 0
 
-    /// System default input device the current `engine` was built for — numeric id
-    /// AND UID. When either changes we recreate the engine so AVAudioEngine
-    /// re-queries the new device — but NOT on every recording. Both are compared
-    /// because neither alone is reliable: Core Audio can recycle a numeric id for
-    /// a different device, and the same device can reconnect under a new id.
+    /// Tożsamość wejścia aktywnego silnika (HAL może ponownie użyć numeru ID).
     private var lastConfiguredInputID: AudioDeviceID = 0
     private var lastConfiguredInputUID: String?
     /// ID zapamiętany dla silnika używanego do bieżącego nagrania, tylko do odczytu.
@@ -176,7 +184,6 @@ final class AudioRecorder {
             wlasciciel.recorder?.processTap(buffer: buffer, generacja: generacja)
         }
         wlasciciel.recorder = self
-        obserwujSilnik()
     }
 
     private let targetFormat: AVAudioFormat = {
@@ -200,8 +207,7 @@ final class AudioRecorder {
                 // As a last resort, recreate the engine from scratch and retry once.
                 Self.log.notice("AVAudio start failed with -10868; recreating engine and retrying after 250ms")
                 usleep(250_000)
-                engine.inputNode.removeTap(onBus: 0)
-                if engine.isRunning { engine.stop() }
+                zwolnijSilnik()
                 odbudujSilnik()
                 try bringUpEngine()
             }
@@ -209,8 +215,7 @@ final class AudioRecorder {
             limitCzasu.anuluj()
             stabilizacja.anuluj()
             Self.log.error("FN15 audio start failed reason=startFailure")
-            engine.inputNode.removeTap(onBus: 0)
-            engine.stop()
+            zwolnijSilnik()
             engineNeedsRebuild = true
             throw error
         }
@@ -231,17 +236,9 @@ final class AudioRecorder {
 
     /// Prepare the engine and start capture.
     ///
-    /// The engine is **reused** across recordings — recreating it per take spun up
-    /// a second AUHAL unit on the same device while the previous IO thread was
-    /// still alive ("there already is a thread" / StartIO err 35), fatal for
-    /// proxied devices (Bluetooth / Continuity / virtual mics). We recreate it
-    /// when the system default input or its format changes, so AVAudioEngine
-    /// re-queries the new device.
-    ///
-    /// We deliberately do NO manual AUHAL device rebinding here: the
-    /// uninit→set→init dance refused to re-engage proxied devices after the first
-    /// use. Device selection is applied by setting the *system default* input (see
-    /// the menu-bar mic picker); the plain input node then follows it.
+    /// Nowy silnik powstaje dopiero przy starcie kolejnej sesji, po zwolnieniu
+    /// poprzedniego. Rekonfiguracja w trakcie nagrania nie odtwarza go bez potrzeby.
+    /// Wybór mikrofonu stosuje systemowe wejście, bez ręcznego rebindingu AUHAL.
     private func bringUpEngine(zachowajSesje: Bool = false) throws {
         stabilizacja.anuluj()
         ochronaRekonfiguracji.rozpocznijPrzebudowe()
@@ -257,13 +254,15 @@ final class AudioRecorder {
             }
         }
         generacjaTapu &+= 1
-        if engine.isRunning { engine.stop() }
-        engine.inputNode.removeTap(onBus: 0)
+        if let silnik {
+            if silnik.isRunning { silnik.stop() }
+            if formatTapu != nil { silnik.inputNode.removeTap(onBus: 0) }
+        }
 
         let currentInput = AudioDeviceManager.defaultInputDeviceID() ?? 0
         let currentUID = currentInput != 0 ? AudioDeviceManager.uid(for: currentInput) : nil
         let currentName = currentInput != 0 ? AudioDeviceManager.name(for: currentInput) : nil
-        if engineNeedsRebuild || currentInput != lastConfiguredInputID
+        if silnik == nil || engineNeedsRebuild || currentInput != lastConfiguredInputID
             || currentUID != lastConfiguredInputUID {
             odbudujSilnik()
             engineNeedsRebuild = false
@@ -298,7 +297,7 @@ final class AudioRecorder {
         } catch {
             engineNeedsRebuild = true
             // Po NSException nie używamy ponownie częściowo skonfigurowanego silnika.
-            odbudujSilnik()
+            zwolnijSilnik()
             Self.log.error("FN16 audio stop reason=tapInstallationException")
             throw error
         }
@@ -323,13 +322,12 @@ final class AudioRecorder {
         kontrolaDzwieku.anuluj()
         nadzorDzwieku.zakoncz()
         ochronaRekonfiguracji = OchronaRekonfiguracjiAudio()
-        guard state == .recording else { return [] }
+        guard state == .recording else { zwolnijSilnik(); return [] }
         state = .idle
         generacjaTapu &+= 1
         onZatrzymanie?()
 
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+        zwolnijSilnik()
 
         let result = samples
         samples.removeAll(keepingCapacity: false)

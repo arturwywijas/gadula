@@ -17,6 +17,7 @@ clang -fobjc-arc -c Sources/AudioTapGuard/AudioTapGuard.m \
 swiftc -swift-version 6 -parse-as-library -I "$test_build" -I "$test_build/AudioTapGuard" \
   -L "$test_build" -lVoiceAgentCore -Xlinker -rpath -Xlinker "$test_build" \
   Sources/VoiceAgentApp/Snapshot/Audio/AudioRecorder.swift \
+  Sources/VoiceAgentApp/GlosnoscSystemowa.swift \
   Sources/VoiceAgentApp/Snapshot/Audio/KopiaBuforaAudio.swift \
   Sources/VoiceAgentApp/Snapshot/Audio/AudioDeviceManager.swift \
   Sources/VoiceAgentApp/Snapshot/AppLogger.swift \
